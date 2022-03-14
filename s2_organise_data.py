@@ -22,6 +22,26 @@ tract_dic = dict(zip(tractparams["slabel"], tractparams["roi2"]))
 # plot pairwise agreement bewtwee test-retest
 pairwise_TRT = pd.read_csv(raw_csv_dir / "pairwise_agreement.csv")
 pairwise_TRT["btw"] = "T01vsT02"
+pairwise_TRT["analysis"] = "AL_07"
+pairwise_TRT_fix = pd.read_csv(raw_csv_dir / "pairwise_agreement_AL_07_fix.csv")
+pairwise_TRT_fix["analysis"] = "AL_07_fix"
+pairwise_TRT_fix["btw"] = "T01vsT02"
+df = pd.concat([pairwise_TRT, pairwise_TRT_fix])
+df = df.replace({"tract":tract_dic})
+# comparie before and after fix
+tract_to_plot = df[df["analysis"]=="AL_07_fix"].tract.unique()
+fig, axes = plt.subplots()
+sns.stripplot(x = "tract", y = "dice_voxels", 
+                data = df[df["tract"].isin(tract_to_plot)],
+                order = tract_to_plot, 
+                hue = "analysis", ax = axes, alpha=0.5)
+sns.pointplot(x = "tract", y = "dice_voxels", 
+                order = tract_to_plot,
+                data = df[df["tract"].isin(tract_to_plot)],
+                hue = "analysis", alpha = 0.55, ax = axes, join=False)
+plt.show()
+
+
 pairwise_0607 = pd.read_csv(raw_csv_dir / "pairwise_agreement_comAL_06vscomAL_07.csv")
 pairwise = pd.concat([pairwise_TRT, pairwise_0607])
 pairwise = pairwise.replace({"tract":tract_dic})
