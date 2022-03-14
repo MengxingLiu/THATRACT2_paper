@@ -28,6 +28,17 @@ pairwise_TRT_fix["analysis"] = "AL_07_fix"
 pairwise_TRT_fix["btw"] = "T01vsT02"
 df = pd.concat([pairwise_TRT, pairwise_TRT_fix])
 df = df.replace({"tract":tract_dic})
+
+# tckstats organize
+tckstats = pd.read_csv(raw_csv_dir / 
+                "tckstats_AL_07.csv")
+
+tckstats["stats"] = tckstats.stats.map(lambda x:x.lstrip("b'").rstrip(r"\\n'"))
+tckstats[["mean", "std", "min", "max", "count"]] = (
+            tckstats["stats"].str.split(' ',4,  expand=True)
+)
+tckstats.to_csv(git_dir / 
+            "tckstats_AL_07.csv", index=False)
 # comparie before and after fix
 tract_to_plot = df[df["analysis"]=="AL_07_fix"].tract.unique()
 fig, axes = plt.subplots()
