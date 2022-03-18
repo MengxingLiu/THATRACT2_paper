@@ -34,9 +34,10 @@ tckstats = pd.read_csv(raw_csv_dir /
                 "tckstats_AL_07.csv")
 
 tckstats["stats"] = tckstats.stats.map(lambda x:x.lstrip("b'").rstrip(r"\\n'"))
-tckstats[["mean", "std", "min", "max", "count"]] = (
+tckstats[["tck_mean", "tck_std", "tck_min", "tck_max", "tck_count"]] = (
             tckstats["stats"].str.split(' ',4,  expand=True)
 )
+tckstats = tckstats.replace({"TCK": tract_dic})
 tckstats.to_csv(git_dir / 
             "tckstats_AL_07.csv", index=False)
 # comparie before and after fix

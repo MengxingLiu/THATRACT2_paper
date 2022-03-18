@@ -19,16 +19,31 @@ sns.set_style("darkgrid")
 
 tckstats = pd.read_csv(git_dir /
                 "tckstats_AL_07.csv")
-                
-corr = pd.read_csv("correlation_fa.csv")
+thrld = 20            
+corr = pd.read_csv(git_dir / "correlation_fa.csv")
+for sub, tck in itertools.product(tckstats.SUBID.unique(), tckstats.TCK.unique()):
+    T01_count = tckstats[ (tckstats["SUBID"]==sub) &
+                    (tckstats["TCK"]==tck) & 
+                    (tckstats["ses"]=="T01")]["tck_count"]
+    T02_count = tckstats[ (tckstats["SUBID"]==sub) &
+                    (tckstats["TCK"]==tck) & 
+                    (tckstats["ses"]=="T02")]["tck_count"]
+    if len(T02_count) == 0 :
+        continue
+    if  ((int(T01_count) < thrld) or (int(T02_count) < thrld)):
+        print(sub,tck)
+        corr.loc[((corr["SUBID"]==sub) &
+                (corr["TCK"]==tck)), "corr"]=None
+
+
 # plot Profile correlation between test-retest
 corr_TRT = corr[corr["btw"]=="T01vsT02"]
-corr_TRT_des = pd.read_csv("correlation_description.csv")
-
+corr_TRT_des = corr_TRT.groupby("TCK").mean().sort_values("corr")
+corr_TRT_des["TCK"]=corr_TRT_des.index
 fig, axes = plt.subplots()
 sns.stripplot(y="TCK", x="corr", order = corr_TRT_des.TCK.unique(), 
                 data=corr_TRT, alpha = 0.5, ax = axes)
-sns.pointplot(y="TCK", x="mean", order = corr_TRT_des.TCK.unique(), 
+sns.pointplot(y="TCK", x="corr", order = corr_TRT_des.TCK.unique(), 
                 data=corr_TRT_des, alpha = 0.55, ax = axes, join=False)
 plt.xticks(rotation = -90)
 plt.show()
@@ -49,6 +64,21 @@ plt.show()
 ### plot pairwise agreement bewtwee test-retest
 # bundle adjacency 
 pairwise = pd.read_csv(git_dir / "pairwise.csv")
+col_fillna = pairwise.columns.drop(["SUBID", "btw", "TCK", "analysis"])
+for sub, tck in itertools.product(tckstats.SUBID.unique(), tckstats.TCK.unique()):
+    T01_count = tckstats[ (tckstats["SUBID"]==sub) &
+                    (tckstats["TCK"]==tck) & 
+                    (tckstats["ses"]=="T01")]["tck_count"]
+    T02_count = tckstats[ (tckstats["SUBID"]==sub) &
+                    (tckstats["TCK"]==tck) & 
+                    (tckstats["ses"]=="T02")]["tck_count"]
+    if len(T02_count) == 0 :
+        continue
+    if  ((int(T01_count) < thrld) or (int(T02_count) < thrld)):
+        print(sub,tck)
+        pairwise.loc[((pairwise["SUBID"]==sub) &
+                (pairwise["TCK"]==tck)), col_fillna]=None
+
 pairwise_TRT = pairwise[pairwise["btw"]=="T01vsT02"]
 mean = pairwise_TRT.groupby("TCK").mean()
 mean = mean.sort_values(by = "bundle_adjacency_voxels")

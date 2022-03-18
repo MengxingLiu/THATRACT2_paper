@@ -151,3 +151,4 @@ pairwise_TRT[pairwise_TRT["TCK"] == "L_Orbital_Frontal_Complex"][["SUBID","dice_
 corr_TRT[corr_TRT["TCK"] == "L_Entorhinal_Cortex"].sort_values(by="corr")
 pairwise_TRT[pairwise_TRT["TCK"] == "L_Entorhinal_Cortex"][["SUBID","dice_voxels"]].sort_values(
                         by="dice_voxels")
+                        
