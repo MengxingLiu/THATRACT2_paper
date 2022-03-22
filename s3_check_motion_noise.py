@@ -19,6 +19,13 @@ raw_csv = Path(f"{git_dir}/raw_csv")
 
 # load head motion, the column 6 is FWD
 head_motion = pd.read_csv(raw_csv / "head_motion_all.csv", header=None)
+head_motion = head_motion[[6,7,8]]
+head_motion.columns = ["fwd", "SUBID", "ses"]
+a = head_motion.groupby(["SUBID", "ses"]).mean().reset_index()
+head_motion = a.pivot(index="SUBID", columns = "ses", values = "fwd").reset_index()
+# average head motion across volumes
+
+a.pivot(index=[7], columns=[8], values=[6]).reset_index()
 
 # calculate FWD percentage > 1mm for each subject
 motion_summary = pd.DataFrame()
@@ -89,14 +96,23 @@ plt.show()
 
 b = pd.merge(corr_TRT_des, noise_des, on="TCK")
 
-scipy.stats.pearsonr(b["mean"], b["T02"])
+scipy.stats.pearsonr(b["mean"], b["T01"])
+# -0.77 -0.79
+
 corr_noise = pd.merge(corr_TRT, noise_TRT, on=["TCK", "SUBID"])
+corr_noise_motion = pd.merge(corr_noise, head_motion, on="SUBID")
 #check subject-wise correlation of specific tract
 for i in corr_noise.TCK.unique():
-    corr_noise_tck = corr_noise[corr_noise["TCK"]==i]
-    r, p = scipy.stats.pearsonr(corr_noise_tck["corr"], corr_noise_tck["T02"])
+    corr_noise_tck = corr_noise_motion[corr_noise_motion["TCK"]==i]
+    r, p = scipy.stats.pearsonr(corr_noise_tck["T01_x"], corr_noise_tck["T01_y"])
+    if r < -0.3 or r > 0.3:
+        print(i,r, corr_noise_tck["corr"].mean(), "noise with motion")
+    
+    r, p = scipy.stats.pearsonr(corr_noise_tck["corr"], corr_noise_tck["T01_y"])
     if r < -0.3:
-        print(i,r, corr_noise_tck["corr"].mean())
+        print(i,r,p, corr_noise_tck["corr"].mean(), "fa correlation with motion")
+        # only 8 tracts have <-0.3 correlation bewteen correlation and motion
+        # not related to the lowest correlation TCKs
 
 for i in corr_noise.SUBID.unique():
     corr_noise_sub = corr_noise[corr_noise["SUBID"]==i]
@@ -105,6 +121,9 @@ for i in corr_noise.SUBID.unique():
         print(i,r, corr_noise_sub["corr"].mean())
 
 
+
+
+# plot 
 corr_a = corr_TRT[corr_TRT["TCK"]=="L_Area_25"].sort_values(by="SUBID")
 noise_a = noise_TRT[noise_TRT["TCK"]=="L_Area_25"].sort_values(by="SUBID")
 scipy.stats.pearsonr(corr_a["corr"], noise_a["T01"])
@@ -132,13 +151,30 @@ sns.pointplot(y="TCK", x="T02", order = order,
 plt.xticks(rotation = -90)
 plt.tight_layout()
 plt.show()
-a = pd.merge(mean, noise_des, on="TCK")
 
+a = pd.merge(mean, noise_des, on="TCK")
 scipy.stats.pearsonr(a["dice_voxels"], a["T02"])
 -0.50, -0.49
 
+tmp = pd.merge(pairwise_TRT, noise_TRT, on = ["SUBID", "TCK"])
+pairwise_noise_motion = pd.merge(tmp, head_motion, on=["SUBID"])
 
-## test with reproducibility fa correlation
+
+for i in pairwise_noise_motion.TCK.unique():
+    pairwise_noise_motion_tck = pairwise_noise_motion[pairwise_noise_motion["TCK"]==i]
+    # r, p = scipy.stats.pearsonr(corr_noise_tck["corr"], corr_noise_tck["T01_x"])
+    # if r < -0.3:
+    #     print(i,r, corr_noise_tck["corr"].mean())
+    
+    r, p = scipy.stats.pearsonr(pairwise_noise_motion_tck["dice_voxels"],
+                         pairwise_noise_motion_tck["T01_y"])
+    if r < -0.3:
+        print(i,r,p, pairwise_noise_motion_tck["dice_voxels"].mean(), "dice with motion")
+        # 10 tracts has <-0.3 correlation, not related to lower dice.
+
+
+
+## test with fa correlation computational
 corr_0607 = corr[corr["btw"]=="AL_06vsAL_07"]
 corr_0607_des = corr_0607.groupby(["TCK"]).mean()
 corr_0607_des = corr_0607_des.sort_values(by="corr")
@@ -155,7 +191,7 @@ sns.stripplot(y="TCK", x="corr", order = order,
                 data=corr_0607, alpha = 0.5, ax = axes)
 sns.pointplot(y="TCK", x="corr", order = order, 
                 data=corr_0607_des, alpha = 0.55, ax = axes, join=False)
-sns.pointplot(y="TCK", x="noise", order = order, 
+sns.pointplot(y="TCK", x="T01", order = order, 
                 data=noise_des, alpha = 0.55, ax = axes2, 
                 join=False, color="Green")
 
@@ -175,6 +211,20 @@ a = a.drop(a[a["TCK"].str.contains("MammillaryBody")].index)
 
 corr_noise_compute = pd.merge(corr_0607, noise_pivot,
                              on=["SUBID", "TCK"])
+corr_noise_motion_com = pd.merge(corr_noise_compute, head_motion, on = "SUBID")
+
+#check subject-wise correlation of specific tract
+for i in corr_noise.TCK.unique():
+    corr_noise_tck = corr_noise_motion_com[corr_noise_motion_com["TCK"]==i]
+    r, p = scipy.stats.pearsonr(corr_noise_tck["T01_x"], corr_noise_tck["T01_y"])
+    if r < -0.3 or r > 0.3:
+        print(i,r, corr_noise_tck["corr"].mean(), "noise with motion")
+    
+    r, p = scipy.stats.pearsonr(corr_noise_tck["corr"], corr_noise_tck["T01_y"])
+    if r < -0.3 or r > 0.3:
+        print(i,r,p, corr_noise_tck["corr"].mean(), "fa correlation with motion")
+        # only one tract has <-0.3 correlation of fa-motion
+
 
 #check subject-wise correlation of specific tract
 for i in corr_noise_compute.TCK.unique():
@@ -211,6 +261,23 @@ sns.pointplot(y="TCK", x="noise", order = order,
 plt.xticks(rotation = -90)
 #plt.tight_layout()
 plt.show()
+
+pairwise_noise_com = pd.merge(pairwise_0607, noise_pivot, on=["SUBID", "TCK"])
+pairwise_noise_motion_com = pd.merge(pairwise_noise_com, head_motion, on="SUBID")
+
+for i in pairwise_noise_com.TCK.unique():
+    pairwise_noise_motion_tck = (
+        pairwise_noise_motion_com[pairwise_noise_motion_com["TCK"]==i])
+    # r, p = scipy.stats.pearsonr(corr_noise_tck["corr"], corr_noise_tck["T01_x"])
+    # if r < -0.3:
+    #     print(i,r, corr_noise_tck["corr"].mean())
+    
+    r = pairwise_noise_motion_tck["dice_voxels"].corr(
+                 pairwise_noise_motion_tck["T01_y"])
+    if r < -0.3 or r > 0.3:
+        print(i,r, pairwise_noise_motion_tck["dice_voxels"].mean(), "dice with motion")
+        # 1 tracts has <-0.3 correlation
+
 
 
 a = pd.merge(mean, noise_des, on="TCK")
