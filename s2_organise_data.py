@@ -66,3 +66,10 @@ pairwise.to_csv(git_dir / "pairwise.csv", index=False)
 # calculate description
 pairwise.groupby(["btw", "TCK"]).describe().to_csv("pairwise_description.csv")
 
+
+# organize noise file
+noise = pd.read_csv(raw_csv_dir / "noise.csv")
+noise = noise.drop(noise[noise["SUBID"]=="SUBID"].index )
+noise["noise"] = noise["noise"].apply(lambda x: x.lstrip("b'").rstrip(r" \n'"))
+noise = noise.replace({"TCK":tract_dic})
+noise.to_csv(git_dir / "noise_clean.csv", index=False)
