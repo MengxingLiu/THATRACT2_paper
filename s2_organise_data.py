@@ -85,7 +85,8 @@ tckstats = tckstats.reset_index()
 # concatenate pairwise, noise, head_motion, fa correlation and tckstats
 pw_fa_ns_mt_st = pd.merge(pw_fa_ns_mt, tckstats, 
                         how="outer", on = ["SUBID", "TCK"])
-
+# calculate noise difference between T01 and T02
+pw_fa_ns_mt_st["noise_diff_T01-T02"] = pw_fa_ns_mt_st["noise_T01"] - pw_fa_ns_mt_st["noise_T02"]
 pw_fa_ns_mt_st.to_csv(git_dir / "pw_fa_ns_mt_st.csv", index=False)
 
 """
