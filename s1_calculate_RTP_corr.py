@@ -1,8 +1,11 @@
+import os
+os.environ['FOR_DISABLE_CONSOLE_CTRL_HANDLER'] = '1'
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
-import scipy,random, matplotlib, itertools, glob, os, platform, getpass
+import random, matplotlib, itertools, glob, platform, getpass
+
 import numpy as np
 import matplotlib.gridspec as gridspec
 from pathlib import Path
@@ -66,74 +69,38 @@ correlation = pd.read_csv(git_dir / "correlation_fa.csv")
 correlation.groupby("TCK").apply(np.mean)
 correlation.groupby("TCK").describe().to_csv("correlation_description.csv")
 
-con_fa_ana = pd.DataFrame(columns = ["subID", "TCK", "corr", "btw"])
-for AL in [["AL_06", "AL_07"], ["AL_06_fix", "AL_07_fix"]]:
-    # calculate profile correlation btw computations
-    df_06 = pd.read_csv(raw_csv_dir / f"RTP_Profile_{AL[0]}.csv")
-    df_07 = pd.read_csv(raw_csv_dir / f"RTP_Profile_{AL[1]}.csv")
-
-    df = pd.concat([df_06, df_07])
-    #list1 = [f"{i:02d}" for i in range(6,8)]
-    #list1 = range(1,11)
-    #list1 = ["AL_06_fix", "AL_07_fix"]
-    a = itertools.combinations(AL, 2)
-    # df = pd.read_csv("RTP_Profile_compute.csv")
-    df = pd.concat([df_06,df_07])
-    TCKS = pd.read_csv(raw_csv_dir / 
-            "RTP_Profile_AL_06_fix.csv")["TCK"].unique()
-    for i in a:
-        df_ana_x = df[ (df["ses"] == "T01") & (df["analysis"] == i[0])]
-        df_ana_y = df[ (df["ses"] == "T01") & (df["analysis"] == i[1])]
-        #TCKS = df_ana_y.TCK.unique()
-        ses = df_ana_y.ses.unique()
-        SUBS = df_ana_y.subID.unique()
-        ind = 'fa'
-        # correlation of fa
-        for tck, sub in itertools.product(TCKS, SUBS):
-            a = df_ana_x.loc[(df_ana_x["TCK"]==tck) & (df_ana_x["ses"]=="T01") 
-                        & (df_ana_x["subID"]==sub), "fa"]
-            if len(a)==0 or a.isnull().values.any():
-                continue
-            b = df_ana_y.loc[(df_ana_y["TCK"]==tck) & (df_ana_y["ses"]=="T01") 
-                        & (df_ana_y["subID"]==sub), "fa"]
-            if len(b)==0 or b.isnull().values.any():
-                continue
-            
-            c, _ = scipy.stats.pearsonr(a,b)
-            d, _ = scipy.stats.pearsonr(a[::-1],b)
-            c = max(c,d)    
-            print(tck, sub, f"{i[0]} and {i[1]}")
-            con_fa_ana = con_fa_ana.append({"subID":sub, "TCK":tck, 
-                                                "corr":c, 
-                                                "btw":f"{i[0]}vs{i[1]}"}, 
-                                                ignore_index=True)
-            
 
 
-con_fa_ana = con_fa_ana.replace({"TCK":tract_dic} )
-con_fa_ana = con_fa_ana.rename(columns={"subID":"SUBID"})
-con_fa_ana.to_csv(git_dir / "correlation_fa_compute_withfix.csv", index=False)
 
 
-df = pd.read_csv(raw_csv_dir / "RTP_Profile_AL_compute.csv")
+df = pd.read_csv(raw_csv_dir / "RTP_Profile_compute.csv")
 analysis = df.analysis.unique()
-a = itertools.combinations(analysis,2)
+analysis = itertools.combinations(analysis,2)
 
 ## calculate RTP profile correlation
 con_fa_ana = pd.DataFrame(columns = ["subID", "TCK", "corr", "btw"])
 between = ["computation", "test-retest"]
-analysis = [["AL_02", "AL_03"]]
+
+
 inds = ['ad', 'cl', 'md', 'volume', 'curvature',
        'rd', 'fa', 'torsion']
 
 for ana in analysis:
     for BTW in between:
+        
         if BTW=="computation":
+            
             df_ana_x = df[ (df["ses"] == "T01") & (df["analysis"] == ana[0])]
             df_ana_y = df[ (df["ses"] == "T01") & (df["analysis"] == ana[1])]
-        elif BTW=="test-retest":
+            btw = f"{ana[0]}vs{ana[1]}"
+            
+        elif ((BTW=="test-retest" ) & (ana == ("AL_07", "AL_08"))):
+
             df_ana_x = df[ (df["ses"] == "T01") & (df["analysis"] == ana[0])]
-            df_ana_y = df[ (df["ses"] == "T02") & (df["analysis"] == ana[0])]        
+            df_ana_y = df[ (df["ses"] == "T02") & (df["analysis"] == ana[0])] 
+            btw = "test-retest_AL_07"
+        else: 
+            continue       
         TCKS = df_ana_y.TCK.unique()
         ses = df_ana_y.ses.unique()
         SUBS = df_ana_y.subID.unique()
@@ -155,9 +122,9 @@ for ana in analysis:
             # result = c if c.sum()> d.sum() else d
             result = c if c.fa > d.fa else d
 
-            print(tck, sub, BTW)
+            print(tck, sub, btw)
             result["subID"]=sub;result["TCK"]=tck
-            result["btw"]=BTW
+            result["btw"]=btw
             result = pd.DataFrame(result).transpose()
             result = pd.melt(result, id_vars=["subID","TCK","btw"], 
                             value_vars = inds, value_name = "corr", var_name="ind" )
@@ -167,3 +134,38 @@ for ana in analysis:
 con_fa_ana = con_fa_ana.replace({"TCK":tract_dic} )
 con_fa_ana = con_fa_ana.rename(columns={"subID":"SUBID"})
 con_fa_ana.to_csv(git_dir / "correlation_fa_compute_withfix.csv", index=False)
+
+con_fa_ana = pd.DataFrame()
+for ana in analysis:
+    for BTW in between:
+        print(ana, " start")
+        if BTW=="computation":
+            
+            df_ana_x = df[ (df["ses"] == "T01") & (df["analysis"] == ana[0])]
+            df_ana_y = df[ (df["ses"] == "T01") & (df["analysis"] == ana[1])]
+            btw = f"{ana[0]}vs{ana[1]}"
+            df_ana = df_ana_x.merge(df_ana_y, how="inner",
+                    on=["subID", "ind", "TCK", "ses"])
+        elif ((BTW=="test-retest" ) & (ana == ("AL_07", "AL_08"))):
+
+            df_ana_x = df[ (df["ses"] == "T01") & (df["analysis"] == ana[0])]
+            df_ana_y = df[ (df["ses"] == "T02") & (df["analysis"] == ana[0])] 
+            df_ana = df_ana_x.merge(df_ana_y, how="inner",
+                    on=["subID", "ind", "TCK", "analysis"])
+            btw = "test-retest_AL_07"
+        else: 
+            continue       
+        tmp_df = pd.DataFrame()
+        for i in inds:
+            c = df_ana.groupby(["subID", "TCK"])[i+"_x", i+"_y"].corr().iloc[0::2,-1]
+            c = c.reset_index()[["subID", "TCK", i+"_y"]]
+            if i == inds[0]:
+                tmp_df = c.copy()
+            else: tmp_df[i+"_y"] = c[i+"_y"]
+        tmp_df["btw"] = btw
+        print(ana, " finish")
+        con_fa_ana = con_fa_ana.append(tmp_df, ignore_index=True)
+
+con_fa_ana = con_fa_ana.replace({"TCK":tract_dic} )
+con_fa_ana = con_fa_ana.rename(columns={"subID":"SUBID"})
+con_fa_ana.to_csv(git_dir / "correlation_all_index.csv", index=False)
