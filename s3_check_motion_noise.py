@@ -380,6 +380,7 @@ a[5:-5]["dice_voxels_comAL_06vscomAL_07"].corr(a[5:-5]["tck_mean_T01"])
 plot_repro_factors(pw_fa_ns_mt_st,"dice_voxels_comAL_06vscomAL_07", "noise_T01")
 sns.set_style("darkgrid")
 def plot_repro_factors(data, repro, factor):
+    data = data[((data[repro].notna()) & (data[factor].notna()))]
     a = data.groupby("TCK").mean()
     a = a.sort_values(by=repro).reset_index()
     r = a[repro].corr(a[factor]) 
