@@ -26,22 +26,20 @@ pairwise_TRT["btw"] = "T01vsT02"
 pairwise_TRT["analysis"] = "AL_07"
 
 ## load pairwise computational
-pairwise_0607 = pd.read_csv(raw_csv_dir / "pairwise_agreement_comAL_06vscomAL_07.csv")
-pairwise = pd.concat([pairwise_TRT, pairwise_0607])
+pairwise_compute = pd.read_csv(raw_csv_dir / "pairwise_agreement_AL_compute.csv", 
+                                    on_bad_lines='skip')
+pairwise = pd.concat([pairwise_TRT, pairwise_compute])
 pairwise = pairwise.replace({"tract":tract_dic})
 pairwise = pairwise.rename(columns={"tract":"TCK"})
+pairwise = pairwise[~(pairwise["bundle_adjacency_voxels"]=="bundle_adjacency_voxels")]
 pairwise["bundle_adjacency_voxels"] = pairwise["bundle_adjacency_voxels"].astype(float)
 pairwise["dice_voxels"] = pairwise["dice_voxels"].astype(float)
 pairwise["density_correlation"] = pairwise["density_correlation"].astype(float)
-pairwise.to_csv(git_dir / "pairwise.csv", index=False)
+pairwise.to_csv(raw_csv_dir / "pairwise_agreement_all_final.csv", index=False)
 
 pairwise = pairwise[["bundle_adjacency_voxels", "dice_voxels", 
                 'density_correlation', 'TCK', 'SUBID', 'btw']]
-
-pairwise = pairwise.pivot(index=["SUBID", "TCK"], columns = "btw")
-pairwise.columns = ["_".join(i) for i in pairwise.columns.to_flat_index()]
-pairwise = pairwise.reset_index()
-
+## organise noise file
 noise = pd.read_csv(raw_csv_dir / "noise.csv")
 noise = noise.drop(noise[noise["SUBID"]=="SUBID"].index )
 noise["noise"] = noise["noise"].apply(lambda x: x.lstrip("b'").rstrip(r" \n'"))
@@ -49,9 +47,19 @@ noise = noise.replace({"TCK":tract_dic})
 noise = noise.pivot(index=["SUBID", "TCK"], columns = "ses", values = "noise")
 noise = noise.reset_index()
 noise = noise.rename(columns = {"T01": "noise_T01", "T02": "noise_T02"})
-noise.to_csv(git_dir / "noise_clean.csv", index=False)
+noise.to_csv(raw_csv_dir / "noise_clean.csv", index=False)
+
+## concatenate pairwise agreement of test-retest and only AL06vsAL07 to compaire
+## with noise and other stuff
+pairwise = pairwise[(pairwise["btw"]=="T01vsT02") | 
+                    (pairwise["btw"]=="comAL_06vscomAL_07")]
+pairwise = pairwise.pivot(index=["SUBID", "TCK"], columns = "btw")
+pairwise.columns = ["_".join(i) for i in pairwise.columns.to_flat_index()]
+pairwise = pairwise.reset_index()
+
 
 # concatenate pairwise and noise
+noise = pd.read_csv(raw_csv_dir / "noise_clean.csv")
 pairwise_noise = pd.merge(pairwise, noise,  how = "outer", on = ["SUBID", "TCK"])
 
 # load head motion, the column 6 is FWD
