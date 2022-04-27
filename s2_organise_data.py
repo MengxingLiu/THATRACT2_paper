@@ -39,6 +39,7 @@ pairwise.to_csv(raw_csv_dir / "pairwise_agreement_all_final.csv", index=False)
 
 pairwise = pairwise[["bundle_adjacency_voxels", "dice_voxels", 
                 'density_correlation', 'TCK', 'SUBID', 'btw']]
+
 ## organise noise file
 noise = pd.read_csv(raw_csv_dir / "noise.csv")
 noise = noise.drop(noise[noise["SUBID"]=="SUBID"].index )
@@ -56,7 +57,6 @@ pairwise = pairwise[(pairwise["btw"]=="T01vsT02") |
 pairwise = pairwise.pivot(index=["SUBID", "TCK"], columns = "btw")
 pairwise.columns = ["_".join(i) for i in pairwise.columns.to_flat_index()]
 pairwise = pairwise.reset_index()
-
 
 # concatenate pairwise and noise
 noise = pd.read_csv(raw_csv_dir / "noise_clean.csv")
@@ -97,18 +97,7 @@ pw_fa_ns_mt_st = pd.merge(pw_fa_ns_mt, tckstats,
 pw_fa_ns_mt_st["noise_diff_T01-T02"] = pw_fa_ns_mt_st["noise_T01"] - pw_fa_ns_mt_st["noise_T02"]
 pw_fa_ns_mt_st.to_csv(git_dir / "pw_fa_ns_mt_st.csv", index=False)
 
-"""
 
-# plot pairwise agreement bewtwee test-retest
-pairwise_TRT = pd.read_csv(raw_csv_dir / "pairwise_agreement.csv")
-pairwise_TRT["btw"] = "T01vsT02"
-pairwise_TRT["analysis"] = "AL_07"
-pairwise_TRT_fix = pd.read_csv(raw_csv_dir / "pairwise_agreement_AL_07_fix.csv")
-pairwise_TRT_fix["analysis"] = "AL_07_fix"
-pairwise_TRT_fix["btw"] = "T01vsT02"
-df = pd.concat([pairwise_TRT, pairwise_TRT_fix])
-df = df.replace({"tract":tract_dic})
-"""
 # tckstats organize
 tckstats = pd.read_csv(raw_csv_dir / 
                 "tckstats_AL_07.csv")
