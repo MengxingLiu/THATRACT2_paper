@@ -24,54 +24,6 @@ raw_csv_dir = Path(f"{git_dir}/raw_csv")
 tractparams = pd.read_csv(git_dir / "tractparams_AL_final_both_hemi.csv")
 tract_dic = dict(zip(tractparams["label"], tractparams["roi2"]))
 
-# calculate results for test vs retest
-df = pd.read_csv(raw_csv_dir / "RTP_Profile_AL_07.csv")
-df = df.append(pd.read_csv(raw_csv_dir / "RTP_Profile_AL_07_fix.csv"))
-con_fa_ana = pd.DataFrame(columns = ["subID", "TCK", "corr", "btw"])
-for ana in ["AL_07", "AL_07_fix"]:
-    tract_to_cal = df[df["analysis"]==ana].TCK.unique()
-    df_ana_x = df[ (df["ses"] == "T01") & (df["analysis"] == ana)]
-    df_ana_y = df[ (df["ses"] == "T02") & (df["analysis"] == ana)]
-    TCKS = df_ana_y.TCK.unique()
-    ses = df_ana_y.ses.unique()
-    SUBS = df_ana_y.subID.unique()
-    ind = 'fa'
-    # correlation of fa
-    
-    for tck, sub in itertools.product(TCKS, SUBS):
-        a = df_ana_x.loc[(df_ana_x["TCK"]==tck) & (df_ana_x["ses"]=="T01") 
-                    & (df_ana_x["subID"]==sub), "fa"]
-        if len(a)==0 or a.isnull().values.any():
-            continue
-        b = df_ana_y.loc[(df_ana_y["TCK"]==tck) & (df_ana_y["ses"]=="T02") 
-                    & (df_ana_y["subID"]==sub), "fa"]
-        if len(b)==0 or b.isnull().values.any():
-            continue
-        
-        c, _ = scipy.stats.pearsonr(a,b)
-        d, _ = scipy.stats.pearsonr(a[::-1],b)
-        c = max(c,d)    
-        print(tck, sub, "T01 vs T02")
-        con_fa_ana = con_fa_ana.append({"subID":sub, "TCK":tck, 
-                                            "corr":c, 
-                                            "btw":"T01vsT02",
-                                            "analysis":ana}, 
-                                            ignore_index=True)
-        
-
-con_fa_ana = con_fa_ana.replace({"TCK":tract_dic} )
-con_fa_ana = con_fa_ana.rename(columns={"subID":"SUBID"})
-con_fa_ana["SUBID"] = con_fa_ana["SUBID"].fillna('') + con_fa_ana["SUBID2"].fillna('')
-con_fa_ana.to_csv(git_dir / "correlation_fa_AL_07_withfix.csv", index=False)
-
-correlation = pd.read_csv(git_dir / "correlation_fa.csv")
-
-correlation.groupby("TCK").apply(np.mean)
-correlation.groupby("TCK").describe().to_csv("correlation_description.csv")
-
-
-
-
 
 df = pd.read_csv(raw_csv_dir / "RTP_Profile_compute.csv")
 analysis = df.analysis.unique()
@@ -80,7 +32,6 @@ analysis = itertools.combinations(analysis,2)
 ## calculate RTP profile correlation
 
 between = ["computation", "test-retest"]
-
 
 inds = ['ad', 'cl', 'md', 'volume', 'curvature',
        'rd', 'fa', 'torsion']
