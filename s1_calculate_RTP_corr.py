@@ -101,4 +101,4 @@ for row in con_filter.itertuples(index=True, name='Pandas'):
 
 con_fa_ana = con_fa_ana.replace({"TCK":tract_dic} )
 con_fa_ana = con_fa_ana.rename(columns={"subID":"SUBID"})
-con_fa_ana.to_csv(git_dir / "correlation_all_index.csv", index=False)
+con_fa_ana.to_csv(raw_csv_dir / "correlation_all_index.csv", index=False)
