@@ -5,7 +5,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 import random, matplotlib, itertools, glob, platform, getpass
-
+import scipy.stats
 import numpy as np
 import matplotlib.gridspec as gridspec
 from pathlib import Path
@@ -78,62 +78,12 @@ analysis = df.analysis.unique()
 analysis = itertools.combinations(analysis,2)
 
 ## calculate RTP profile correlation
-con_fa_ana = pd.DataFrame(columns = ["subID", "TCK", "corr", "btw"])
+
 between = ["computation", "test-retest"]
 
 
 inds = ['ad', 'cl', 'md', 'volume', 'curvature',
        'rd', 'fa', 'torsion']
-
-for ana in analysis:
-    for BTW in between:
-        
-        if BTW=="computation":
-            
-            df_ana_x = df[ (df["ses"] == "T01") & (df["analysis"] == ana[0])]
-            df_ana_y = df[ (df["ses"] == "T01") & (df["analysis"] == ana[1])]
-            btw = f"{ana[0]}vs{ana[1]}"
-            
-        elif ((BTW=="test-retest" ) & (ana == ("AL_07", "AL_08"))):
-
-            df_ana_x = df[ (df["ses"] == "T01") & (df["analysis"] == ana[0])]
-            df_ana_y = df[ (df["ses"] == "T02") & (df["analysis"] == ana[0])] 
-            btw = "test-retest_AL_07"
-        else: 
-            continue       
-        TCKS = df_ana_y.TCK.unique()
-        ses = df_ana_y.ses.unique()
-        SUBS = df_ana_y.subID.unique()
-
-        # correlation of fa
-        for tck, sub in itertools.product(TCKS, SUBS):
-            a = df_ana_x.loc[(df_ana_x["TCK"]==tck) & 
-                            (df_ana_x["subID"]==sub), inds]
-            if len(a)==0 or a.isnull().values.any():
-                continue
-            b = df_ana_y.loc[(df_ana_y["TCK"]==tck) & 
-                            (df_ana_y["subID"]==sub), inds]
-            if len(b)==0 or b.isnull().values.any():
-                continue
-            a = a.reset_index(drop=True)
-            b = b.reset_index(drop=True)
-            c = a.corrwith(b)
-            d = a.corrwith(b.reindex(index=b.index[::-1]).reset_index(drop=True))
-            # result = c if c.sum()> d.sum() else d
-            result = c if c.fa > d.fa else d
-
-            print(tck, sub, btw)
-            result["subID"]=sub;result["TCK"]=tck
-            result["btw"]=btw
-            result = pd.DataFrame(result).transpose()
-            result = pd.melt(result, id_vars=["subID","TCK","btw"], 
-                            value_vars = inds, value_name = "corr", var_name="ind" )
-
-            con_fa_ana = con_fa_ana.append(result, ignore_index=True)
-
-con_fa_ana = con_fa_ana.replace({"TCK":tract_dic} )
-con_fa_ana = con_fa_ana.rename(columns={"subID":"SUBID"})
-con_fa_ana.to_csv(git_dir / "correlation_fa_compute_withfix.csv", index=False)
 
 con_fa_ana = pd.DataFrame()
 for ana in analysis:
@@ -165,6 +115,38 @@ for ana in analysis:
         tmp_df["btw"] = btw
         print(ana, " finish")
         con_fa_ana = con_fa_ana.append(tmp_df, ignore_index=True)
+
+con_fa_ana_bk = con_fa_ana.copy()
+con_fa_ana_bk.to_csv(raw_csv_dir / "con_fa_ana_raw.csv", index=False)
+con_fa_ana = pd.read_csv(raw_csv_dir / "con_fa_ana_raw.csv")
+con_filter = con_fa_ana[con_fa_ana["fa_y"]<0.7]
+for row in con_filter.itertuples(index=True, name='Pandas'):
+    sub = row.subID
+    tck = row.TCK
+    btw = row.btw
+    fa = row.fa_y
+    
+    if "test-retest" in btw:
+        df_x = df[((df.TCK==tck) & (df.subID==sub) & (df.ses=="T01") &
+                    (df.analysis=="AL_07"))]
+        df_y = df[((df.TCK==tck) & (df.subID==sub) & (df.ses=="T02") &
+                    (df.analysis=="AL_07"))]
+    else:
+        df_x = df[((df.TCK==tck) & (df.subID==sub) & (df.ses=="T01") &
+                    (df.analysis==btw.split("vs")[0]))]
+        df_y = df[((df.TCK==tck) & (df.subID==sub) & (df.ses=="T01") &
+                    (df.analysis==btw.split("vs")[1]))]
+    b = scipy.stats.pearsonr(df_x["fa"], df_y["fa"][::-1])[0]
+    if b < fa:
+        
+        continue
+    else:
+        print(sub, tck, btw, fa, b, "changing")
+        for i in inds:
+            b = scipy.stats.pearsonr(df_x[i], df_y[i][::-1])[0]
+            con_fa_ana.loc[((con_fa_ana["TCK"]==tck) & 
+                            (con_fa_ana.subID ==sub) &
+                            (con_fa_ana.btw ==btw)), i+"_y"] = b
 
 con_fa_ana = con_fa_ana.replace({"TCK":tract_dic} )
 con_fa_ana = con_fa_ana.rename(columns={"subID":"SUBID"})
