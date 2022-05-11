@@ -40,8 +40,7 @@ pairwise["dice_voxels"] = pairwise["dice_voxels"].astype(float)
 pairwise["density_correlation"] = pairwise["density_correlation"].astype(float)
 pairwise.to_csv(raw_csv_dir / "pairwise_agreement_all_final.csv", index=False)
 
-pairwise = pairwise[["bundle_adjacency_voxels", "dice_voxels", 
-                'density_correlation', 'TCK', 'SUBID', 'btw']]
+
 
 ## organise noise file
 noise = pd.read_csv(raw_csv_dir / "noise.csv")
@@ -82,6 +81,20 @@ for i in ["bundle_adjacency_voxels", "dice_voxels", 'density_correlation']:
     col = pairwise.loc[:,i+"_comAL_01vscomAL_02":i+"_comAL_09vscomAL_10"]
     pairwise[i+"_comAL_all_average"]=col.mean(axis=1)
 
+# for density correlation, do Fisher z transform
+i = "density_correlation"
+col = pairwise.loc[:,i+"_comAL_01vscomAL_02":i+"_comAL_09vscomAL_10"]
+fisher_z = np.arctanh(col)
+pairwise[i+"_comAL_all_average_Fisher_z"]=fisher_z.mean(axis=1)
+pairwise[i+"_T01vsT02_Fisher_z"] = np.arctanh(pairwise[i+"_T01vsT02"])
+
+i = "dice_voxels"
+col = pairwise.loc[:,i+"_comAL_01vscomAL_02":i+"_comAL_09vscomAL_10"]
+ln = np.log10(col/(1-col))
+pairwise[i+"_comAL_all_average_ln"]=ln.mean(axis=1)
+pairwise[i+"_T01vsT02_ln"] = np.log10(
+        pairwise[i+"_T01vsT02"]/(1-pairwise[i+"_T01vsT02"]))
+        
 # concatenate pairwise and noise
 noise = pd.read_csv(raw_csv_dir / "noise_clean.csv")
 pairwise_noise = pd.merge(pairwise, noise,  how = "outer", on = ["SUBID", "TCK"])
@@ -108,7 +121,11 @@ fa_corr.rename(columns = {i:i+"_fa" for i in fa_corr.columns
                         if ((i != "SUBID") and (i != "TCK")) }, inplace=True)
 # calculate average across computational correlation
 col = fa_corr.loc[:, "AL_01vsAL_02_fa":"AL_09vsAL_10_fa"]
+# Fisher z transform
+fisher_z = np.arctanh(col)
 fa_corr["AL_all_fa"] = col.mean(axis=1)
+fa_corr["AL_all_fa_Fisher_Z"] = fisher_z.mean(axis=1)
+fa_corr["test-retest_AL_07_fa_Fisher_Z"] = np.arctanh(fa_corr["test-retest_AL_07_fa"])
 
 # concatenate pairwise, noise, head_motion and fa correlation
 pw_fa_ns_mt = pd.merge(pw_ns_mt, fa_corr, how = "outer", on = ["SUBID", "TCK"])
