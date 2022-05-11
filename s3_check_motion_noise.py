@@ -302,18 +302,18 @@ for i in corr_0607.TCK.unique():
 
 
 
-pw_fa_ns_mt_st = pd.read_csv(git_dir / "pw_fa_ns_mt_st.csv")
+pw_fa_ns_mt_st = pd.read_csv(raw_csv / "pw_fa_ns_mt_st.csv")
 
 # check correlation of test-retest correlation with noise
 a = pw_fa_ns_mt_st.groupby("TCK").mean()
-a = a.sort_values(by="fa_corr_06vs07")
+a = a.sort_values(by="test-retest_AL_07_fa")
 
 
-plot_repro_factors(pw_fa_ns_mt_st,"fa_corr_T01vsT02", "noise_T01")
+plot_repro_factors(pw_fa_ns_mt_st,"test-retest_AL_07_fa", "noise_T01")
 # -0.7866186472388043 -0.3682364176125297 if remove 10 highes and lowest
-plot_repro_factors(pw_fa_ns_mt_st,"fa_corr_T01vsT02", "noise_T02")
+plot_repro_factors(pw_fa_ns_mt_st,"test-retest_AL_07_fa", "noise_T02")
 # -0.7759863708526683 -0.46180884931222727 if remove 10 highes and lowest
-plot_repro_factors(pw_fa_ns_mt_st,"fa_corr_T01vsT02", "noise_diff_T01-T02")
+plot_repro_factors(pw_fa_ns_mt_st,"test-retest_AL_07_fa", "noise_diff_T01-T02")
 # 0.1180326456152848 0.23898675048453927 if remove 10 highes and lowest
 
 plot_repro_factors(pw_fa_ns_mt_st,"tck_mean_T01", "noise_T01")
@@ -324,9 +324,9 @@ plot_repro_factors(pw_fa_ns_mt_st,"tck_count_T01", "noise_T01")
 # -0.2797163980008855 if remove mammilothalamic tract
 
 
-plot_repro_factors(pw_fa_ns_mt_st,"fa_corr_T01vsT02", "tck_mean_T01")
+plot_repro_factors(pw_fa_ns_mt_st,"test-retest_AL_07_fa", "tck_mean_T01")
 # 0.1290932172492908 -0.08636114611309718 if remove 10 highes and lowest
-plot_repro_factors(pw_fa_ns_mt_st,"fa_corr_T01vsT02", "tck_count_T01")
+plot_repro_factors(pw_fa_ns_mt_st,"test-retest_AL_07_fa", "tck_count_T02")
 # 0.3676500034555438 0.6934717535405337 if remove 10 highes and lowest
 
 

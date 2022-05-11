@@ -18,13 +18,13 @@ raw_csv = Path(f"{git_dir}/raw_csv")
 sns.set_style("darkgrid")
 
 
-corr = pd.read_csv("correlation_fa.csv")
+corr = pd.read_csv(raw_csv / "correlation_all_index.csv")
 # plot Profile correlation between test-retest
-corr_TRT = corr[corr["btw"]=="T01vsT02"]
-corr_TRT_des = pd.read_csv("correlation_description.csv")
+corr_TRT = corr[corr["btw"]=="test-retest_AL_07"]
+corr_TRT_des = pd.read_csv(raw_csv / "correlation_description_TRT.csv")
 
 fig, axes = plt.subplots()
-sns.stripplot(y="TCK", x="corr", order = corr_TRT_des.TCK.unique(), 
+sns.stripplot(y="TCK", x="fa_y", order = corr_TRT_des.TCK.unique(), 
                 data=corr_TRT, alpha = 0.5, ax = axes)
 sns.pointplot(y="TCK", x="mean", order = corr_TRT_des.TCK.unique(), 
                 data=corr_TRT_des, alpha = 0.55, ax = axes, join=False)
@@ -32,15 +32,14 @@ plt.xticks(rotation = -90)
 plt.show()
 
 # plot Profile correlation between AL06 AL07
-corr_0607 = corr[corr["btw"]=="AL_06vsAL_07"]
-corr_0607_des = corr_0607.groupby(["TCK"]).mean()
-corr_0607_des = corr_0607_des.sort_values(by="corr")
-corr_0607_des["TCK"] = corr_0607_des.index
+corr_com = corr[~(corr["btw"]=="test-retest_AL_07")]
+corr_com_des = pd.read_csv(raw_csv / "correlation_description_computation.csv")
+corr_com_des = corr_com_des.sort_values(by="mean")
 fig, axes = plt.subplots()
-sns.stripplot(y="TCK", x="corr", order = corr_0607_des.TCK.unique(), 
-                data=corr_0607, alpha = 0.5, ax = axes)
-sns.pointplot(y="TCK", x="corr", order = corr_0607_des.TCK.unique(), 
-                data=corr_0607_des, alpha = 0.55, ax = axes, join=False)
+sns.stripplot(y="TCK", x="fa_y", order = corr_com_des.TCK.unique(), 
+                data=corr_com, alpha = 0.5, ax = axes)
+sns.pointplot(y="TCK", x="mean", order = corr_com_des.TCK.unique(), 
+                data=corr_com_des, alpha = 0.55, ax = axes, join=False)
 plt.xticks(rotation = -90)
 plt.show()
 
