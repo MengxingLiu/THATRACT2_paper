@@ -94,7 +94,7 @@ ln = np.log10(col/(1-col))
 pairwise[i+"_comAL_all_average_ln"]=ln.mean(axis=1)
 pairwise[i+"_T01vsT02_ln"] = np.log10(
         pairwise[i+"_T01vsT02"]/(1-pairwise[i+"_T01vsT02"]))
-        
+
 # concatenate pairwise and noise
 noise = pd.read_csv(raw_csv_dir / "noise_clean.csv")
 pairwise_noise = pd.merge(pairwise, noise,  how = "outer", on = ["SUBID", "TCK"])
@@ -142,9 +142,6 @@ pw_fa_ns_mt_st = pd.merge(pw_fa_ns_mt, tckstats,
 # calculate noise difference between T01 and T02
 pw_fa_ns_mt_st["noise_diff_T01-T02"] = pw_fa_ns_mt_st["noise_T01"] - pw_fa_ns_mt_st["noise_T02"]
 pw_fa_ns_mt_st.to_csv(raw_csv_dir / "pw_fa_ns_mt_st.csv", index=False)
-
-
-
 
 
 

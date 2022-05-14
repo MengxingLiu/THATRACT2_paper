@@ -3,7 +3,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
-import scipy,random, matplotlib, itertools, glob, os, platform, getpass
+import scipy,random, matplotlib, itertools, glob, os, platform, getpass, re
 import numpy as np
 import matplotlib.gridspec as gridspec
 from pathlib import Path
@@ -64,255 +64,67 @@ fa_corr_TRT[fa_corr_TRT.TCK.isin(tract_to_check)].to_csv(
 motion_summary.to_csv(git_dir/ "tmp_0.5.csv", index = False)
 
 
-# check noise with fa test-retest correlation
-
-corr = pd.read_csv("correlation_fa.csv")
-# plot Profile correlation between test-retest
-corr_TRT = corr[corr["btw"]=="T01vsT02"]
-corr_TRT_des = pd.read_csv("correlation_description.csv")
-noise = pd.read_csv(git_dir / "noise_clean.csv")
-noise_TRT = noise[noise.SUBID.isin(corr_TRT.SUBID.unique())]
-noise_TRT = noise_TRT.pivot(index = ["SUBID", "TCK"], columns = "ses", values="noise")
-noise_TRT = noise_TRT.reset_index()
-noise_des = noise_TRT.groupby("TCK").mean().reset_index()
-
-
-fig, axes = plt.subplots()
-axes2 = axes.twiny()
-sns.stripplot(y="TCK", x="corr", order = corr_TRT_des.TCK.unique(), 
-                data=corr_TRT, alpha = 0.5, ax = axes)
-sns.pointplot(y="TCK", x="mean", order = corr_TRT_des.TCK.unique(), 
-                data=corr_TRT_des, alpha = 0.55, ax = axes, join=False)
-sns.pointplot(y="TCK", x="T01", order = corr_TRT_des.TCK.unique(), 
-                data=noise_des, alpha = 0.55, ax = axes2, 
-                join=False, color="Green")
-
-sns.pointplot(y="TCK", x="T02", order = corr_TRT_des.TCK.unique(), 
-                data=noise_des, alpha = 0.55, ax = axes2, 
-                join=False, color="Red")
-
-plt.xticks(rotation = -90)
-plt.show()
-
-b = pd.merge(corr_TRT_des, noise_des, on="TCK")
-
-scipy.stats.pearsonr(b["mean"], b["noise_T02"])
-# -0.77 -0.79
-
-corr_noise = pd.merge(corr_TRT, noise_TRT, on=["TCK", "SUBID"])
-corr_noise_motion = pd.merge(corr_noise, head_motion, on="SUBID")
-#check subject-wise correlation of specific tract
-for i in corr_noise.TCK.unique():
-    corr_noise_tck = corr_noise_motion[corr_noise_motion["TCK"]==i]
-    r, p = scipy.stats.pearsonr(corr_noise_tck["T01_x"], corr_noise_tck["T01_y"])
-    if r < -0.3 or r > 0.3:
-        print(i,r, corr_noise_tck["corr"].mean(), "noise with motion")
-    
-    r, p = scipy.stats.pearsonr(corr_noise_tck["corr"], corr_noise_tck["T01_y"])
-    if r < -0.3:
-        print(i,r,p, corr_noise_tck["corr"].mean(), "fa correlation with motion")
-        # only 8 tracts have <-0.3 correlation bewteen correlation and motion
-        # not related to the lowest correlation TCKs
-
-for i in corr_noise.SUBID.unique():
-    corr_noise_sub = corr_noise[corr_noise["SUBID"]==i]
-    r, p = scipy.stats.pearsonr(corr_noise_sub["corr"], corr_noise_sub["T01"])
-    if r < -0.3:
-        print(i,r, corr_noise_sub["corr"].mean())
-
-
-
-
-# plot 
-corr_a = corr_TRT[corr_TRT["TCK"]=="L_Area_25"].sort_values(by="SUBID")
-noise_a = noise_TRT[noise_TRT["TCK"]=="L_Area_25"].sort_values(by="SUBID")
-scipy.stats.pearsonr(corr_a["corr"], noise_a["T01"])
-# check noise with dice test-retest
-pairwise_TRT = pd.read_csv(raw_csv / "pairwise_agreement_TRT.csv")
-mean = pairwise_TRT.groupby("TCK").mean()
-
-mean = mean.sort_values(by = "dice_voxels")
-mean = mean.reset_index()
-order = mean.TCK.unique()
-fig, axes = plt.subplots()
-axes2 = axes.twiny()
-sns.stripplot(y="TCK", x = "dice_voxels", data = pairwise_TRT, 
-                order=order, ax=axes )
-sns.pointplot(y="TCK", x = "dice_voxels", data = mean, 
-                order = order, join = False, ax = axes)
-sns.pointplot(y="TCK", x="T01", order = order, 
-                data=noise_des, alpha = 0.55, ax = axes2, 
-                join=False, color="Green")
-
-sns.pointplot(y="TCK", x="T02", order = order, 
-                data=noise_des, alpha = 0.55, ax = axes2, 
-                join=False, color="Red")
-
-plt.xticks(rotation = -90)
-plt.tight_layout()
-plt.show()
-
-a = pd.merge(mean, noise_des, on="TCK")
-scipy.stats.pearsonr(a["dice_voxels"], a["T02"])
--0.50, -0.49
-
-tmp = pd.merge(pairwise_TRT, noise_TRT, on = ["SUBID", "TCK"])
-pairwise_noise_motion = pd.merge(tmp, head_motion, on=["SUBID"])
-
-
-for i in pairwise_noise_motion.TCK.unique():
-    pairwise_noise_motion_tck = pairwise_noise_motion[pairwise_noise_motion["TCK"]==i]
-    # r, p = scipy.stats.pearsonr(corr_noise_tck["corr"], corr_noise_tck["T01_x"])
-    # if r < -0.3:
-    #     print(i,r, corr_noise_tck["corr"].mean())
-    
-    r, p = scipy.stats.pearsonr(pairwise_noise_motion_tck["dice_voxels"],
-                         pairwise_noise_motion_tck["T01_y"])
-    if r < -0.3:
-        print(i,r,p, pairwise_noise_motion_tck["dice_voxels"].mean(), "dice with motion")
-        # 10 tracts has <-0.3 correlation, not related to lower dice.
-
-
-
-## test with fa correlation computational
-corr_0607 = corr[corr["btw"]=="AL_06vsAL_07"]
-corr_0607_des = corr_0607.groupby(["TCK"]).mean()
-corr_0607_des = corr_0607_des.sort_values(by="corr")
-corr_0607_des = corr_0607_des.reset_index()
-
-noise_pivot = noise.pivot(index = ["SUBID", "TCK"], columns = "ses", values="noise")
-noise_pivot = noise_pivot.reset_index()
-noise_des = noise_pivot.groupby("TCK").mean().reset_index()
-order = corr_0607_des.TCK.unique()
-fig, axes = plt.subplots()
-axes2 = axes.twiny()
-
-sns.stripplot(y="TCK", x="corr", order = order, 
-                data=corr_0607, alpha = 0.5, ax = axes)
-sns.pointplot(y="TCK", x="corr", order = order, 
-                data=corr_0607_des, alpha = 0.55, ax = axes, join=False)
-sns.pointplot(y="TCK", x="T01", order = order, 
-                data=noise_des, alpha = 0.55, ax = axes2, 
-                join=False, color="Green")
-
-# sns.pointplot(y="TCK", x="T02", order = order, 
-#                 data=noise_des, alpha = 0.55, ax = axes2, 
-#                 join=False, color="Red")
-plt.xticks(rotation = -90)
-plt.show()
-
-a = pd.merge(corr_0607_des, noise_des, on="TCK")
-
-scipy.stats.pearsonr(a["corr"][0:10], a["noise"][0:10])
-scipy.stats.pearsonr(a["corr"], a["noise"])
-# try drop mammilory body
-a = a.drop(a[a["TCK"].str.contains("MammillaryBody")].index)
--0.12
-
-corr_noise_compute = pd.merge(corr_0607, noise_pivot,
-                             on=["SUBID", "TCK"])
-corr_noise_motion_com = pd.merge(corr_noise_compute, head_motion, on = "SUBID")
-
-#check subject-wise correlation of specific tract
-for i in corr_noise.TCK.unique():
-    corr_noise_tck = corr_noise_motion_com[corr_noise_motion_com["TCK"]==i]
-    r, p = scipy.stats.pearsonr(corr_noise_tck["T01_x"], corr_noise_tck["T01_y"])
-    if r < -0.3 or r > 0.3:
-        print(i,r, corr_noise_tck["corr"].mean(), "noise with motion")
-    
-    r, p = scipy.stats.pearsonr(corr_noise_tck["corr"], corr_noise_tck["T01_y"])
-    if r < -0.3 or r > 0.3:
-        print(i,r,p, corr_noise_tck["corr"].mean(), "fa correlation with motion")
-        # only one tract has <-0.3 correlation of fa-motion
-
-
-#check subject-wise correlation of specific tract
-for i in corr_noise_compute.TCK.unique():
-    corr_noise_compute_tck = corr_noise_compute[corr_noise_compute["TCK"]==i]
-    r, p = scipy.stats.pearsonr(corr_noise_compute_tck["corr"], corr_noise_compute_tck["T01"])
-    if r < -0.2:
-        print(i,r, corr_noise_compute_tck["corr"].mean())
-
-for i in corr_noise_compute.SUBID.unique():
-    corr_noise_compute_sub = corr_noise_compute[corr_noise_compute["SUBID"]==i]
-    r, p = scipy.stats.pearsonr(corr_noise_compute_sub["corr"], corr_noise_compute_sub["T01"])
-    if r < -0.3:
-        print(i,r, corr_noise_compute_sub["corr"].mean())
-
-
-
-## test with reproducibility dice
-pairwise = pd.read_csv(git_dir / "pairwise.csv")
-pairwise_0607 = pairwise[pairwise["btw"]=="comAL_06vscomAL_07"]
-mean = pairwise_0607.groupby("TCK").mean()
-mean = mean.sort_values(by = "dice_voxels")
-mean = mean.reset_index()
-order = mean.TCK.unique()
-fig, axes = plt.subplots()
-axes2 = axes.twiny()
-sns.stripplot(y="TCK", x = "dice_voxels", data = pairwise_0607, 
-                order=order, ax=axes )
-sns.pointplot(y="TCK", x = "dice_voxels", data = mean, 
-                order = order, join = False, ax=axes)
-sns.pointplot(y="TCK", x="noise", order = order, 
-                data=noise_des, alpha = 0.55, ax = axes2, 
-                join=False, color="Green")
-        
-plt.xticks(rotation = -90)
-#plt.tight_layout()
-plt.show()
-
-pairwise_noise_com = pd.merge(pairwise_0607, noise_pivot, on=["SUBID", "TCK"])
-pairwise_noise_motion_com = pd.merge(pairwise_noise_com, head_motion, on="SUBID")
-
-for i in pairwise_noise_com.TCK.unique():
-    pairwise_noise_motion_tck = (
-        pairwise_noise_motion_com[pairwise_noise_motion_com["TCK"]==i])
-    # r, p = scipy.stats.pearsonr(corr_noise_tck["corr"], corr_noise_tck["T01_x"])
-    # if r < -0.3:
-    #     print(i,r, corr_noise_tck["corr"].mean())
-    
-    r = pairwise_noise_motion_tck["dice_voxels"].corr(
-                 pairwise_noise_motion_tck["T01_y"])
-    if r < -0.3 or r > 0.3:
-        print(i,r, pairwise_noise_motion_tck["dice_voxels"].mean(), "dice with motion")
-        # 1 tracts has <-0.3 correlation
-
-
-
-a = pd.merge(mean, noise_des, on="TCK")
-
-scipy.stats.pearsonr(a["dice_voxels"], a["noise"])
-scipy.stats.pearsonr(a["dice_voxels"][0:15], a["noise"][0:15])
-a[["TCK","dice_voxels", "noise"]][0:15]
--0.07, -0.07
-
-
-
-for i in corr_0607.TCK.unique():
-    c = corr_0607[corr_0607["TCK"]==i]
-    noise_com =noise[noise.SUBID.isin(c.SUBID.unique())]
-    noise_com = noise_com[noise_com["TCK"]==i]
-    noise_com = noise_com[noise_com["ses"]=="T01"]
-    c = c.sort_values(by="SUBID")
-    noise_com = noise_com.sort_values(by="SUBID")
-    r, p = scipy.stats.pearsonr(c["corr"], noise_com.noise)
-    if r < -0.3:
-        print(i,r )
-
 
 
 pw_fa_ns_mt_st = pd.read_csv(raw_csv / "pw_fa_ns_mt_st.csv")
-
+for col in pw_fa_ns_mt_st.columns:
+    if re.match(".*AL.*AL", col):
+        del pw_fa_ns_mt_st[col]
 # check correlation of test-retest correlation with noise
 a = pw_fa_ns_mt_st.groupby("TCK").mean()
 a = a.sort_values(by="test-retest_AL_07_fa")
 
+corr_pairs = {"tck_mean_T01": "noise_T01", "tck_count_T01": "noise_T01",
+             "test-retest_AL_07_fa_Fisher_Z": "noise_T01",
+             "test-retest_AL_07_fa_Fisher_Z": "noise_T02",
+             "test-retest_AL_07_fa_Fisher_Z": "tck_mean_T01",
+             "test-retest_AL_07_fa_Fisher_Z": "tck_count_T01",
+             "dice_voxels_T01vsT02_ln": "noise_T01",
+             "dice_voxels_T01vsT02_ln": "tck_mean_T01",
+             "dice_voxels_T01vsT02_ln": "tck_count_T01",
+             "density_correlation_T01vsT02_Fisher_z": "noise_T01",
+             "density_correlation_T01vsT02_Fisher_z": "tck_mean_T01",
+             "density_correlation_T01vsT02_Fisher_z": "tck_count_T01",
+             "bundle_adjacency_voxels_T01vsT02": "noise_T01",
+             "bundle_adjacency_voxels_T01vsT02": "tck_mean_T01",
+             "bundle_adjacency_voxels_T01vsT02": "tck_count_T01",
+             "AL_all_fa_Fisher_Z": "noise_T01",
+             "AL_all_fa_Fisher_Z": "tck_mean_T01",
+             "AL_all_fa_Fisher_Z": "tck_count_T01",
+             "dice_voxels_comAL_all_average_ln": "noise_T01",
+             "dice_voxels_comAL_all_average_ln": "tck_mean_T01",
+             "dice_voxels_comAL_all_average_ln": "tck_count_T01",
+             "density_correlation_comAL_all_average_Fisher_z": "noise_T01",
+             "density_correlation_comAL_all_average_Fisher_z": "tck_mean_T01",
+             "density_correlation_comAL_all_average_Fisher_z": "tck_count_T01",                           
+             "bundle_adjacency_voxels_comAL_all_average": "noise_T01",
+             "bundle_adjacency_voxels_comAL_all_average": "tck_mean_T01",
+             "bundle_adjacency_voxels_comAL_all_average": "tck_count_T01"
+               }
+rep = ["test-retest_AL_07_fa_Fisher_Z", "dice_voxels_T01vsT02_ln", 
+        "density_correlation_T01vsT02_Fisher_z","bundle_adjacency_voxels_T01vsT02", 
+        "AL_all_fa_Fisher_Z","dice_voxels_comAL_all_average_ln",
+         "density_correlation_comAL_all_average_Fisher_z",
+         "bundle_adjacency_voxels_comAL_all_average"]
+factors = ["noise_T01", "noise_T02","tck_mean_T01" ,"tck_count_T01"]
+for key, value in itertools.product(rep,factors):
+    print(key, value)
+    plot_repro_factors(pw_fa_ns_mt_st, key, value)
 
+""" old commands
 plot_repro_factors(pw_fa_ns_mt_st,"test-retest_AL_07_fa", "noise_T01")
 # -0.7866186472388043 -0.3682364176125297 if remove 10 highes and lowest
+plot_repro_factors(pw_fa_ns_mt_st,"test-retest_AL_07_fa_Fisher_Z", "noise_T01")
+# -0.7719620804445716, -0.5420327708800353, if remove 10 highest and lowest
+# -0.7322329086835533 if remove mammilothalamic tract
+
 plot_repro_factors(pw_fa_ns_mt_st,"test-retest_AL_07_fa", "noise_T02")
 # -0.7759863708526683 -0.46180884931222727 if remove 10 highes and lowest
+plot_repro_factors(pw_fa_ns_mt_st,"test-retest_AL_07_fa_Fisher_Z", "noise_T02")
+# -0.7963196858608802, -0.6245193851144515, if remove 10 highest and lowest 
+# -0.7690002074294058 if remove mammilothalamic tract
+
+
 plot_repro_factors(pw_fa_ns_mt_st,"test-retest_AL_07_fa", "noise_diff_T01-T02")
 # 0.1180326456152848 0.23898675048453927 if remove 10 highes and lowest
 
@@ -326,6 +138,9 @@ plot_repro_factors(pw_fa_ns_mt_st,"tck_count_T01", "noise_T01")
 
 plot_repro_factors(pw_fa_ns_mt_st,"test-retest_AL_07_fa", "tck_mean_T01")
 # 0.1290932172492908 -0.08636114611309718 if remove 10 highes and lowest
+plot_repro_factors(pw_fa_ns_mt_st,"test-retest_AL_07_fa_Fisher_Z", "tck_mean_T01")
+# 0.03875062208253553, 0.006052888355612519, if remove 10 highest and lowest 
+# -0.0961565510908329 if remove mammilothalamic tract
 plot_repro_factors(pw_fa_ns_mt_st,"test-retest_AL_07_fa", "tck_count_T02")
 # 0.3676500034555438 0.6934717535405337 if remove 10 highes and lowest
 
@@ -343,11 +158,6 @@ plot_repro_factors(pw_fa_ns_mt_st,"dice_voxels_T01vsT02", "tck_mean_T01")
 plot_repro_factors(pw_fa_ns_mt_st,"dice_voxels_T01vsT02", "tck_count_T01")
 # 0.7465002458634376 0.668889203349984 if remove 10 highes and lowest
 
-
-plot_repro_factors(pw_fa_ns_mt_st,"fa_corr_06vs07", "noise_T01")
-# -0.12397250548153714 -0.5728846646937854 if remove 10 highes and lowest
-
-
 plot_repro_factors(pw_fa_ns_mt_st,"fa_corr_06vs07", "tck_mean_T01")
 # -0.7401572126510043 0.5975722163072998 if remove 10 highes and lowest
 plot_repro_factors(pw_fa_ns_mt_st,"fa_corr_06vs07", "tck_count_T01")
@@ -362,24 +172,12 @@ plot_repro_factors(pw_fa_ns_mt_st,"dice_voxels_comAL_06vscomAL_07", "tck_mean_T0
 plot_repro_factors(pw_fa_ns_mt_st,"dice_voxels_comAL_06vscomAL_07", "tck_count_T01")
 # 0.6848783685323427 0.7756594415064574 if remove 10 highes and lowest
 
-
-a["fa_corr_06vs07"].corr(a["noise_T01"])   # -0.12
-#a[0:10]["fa_corr_06vs07"].corr(a[0:10]["noise_T01"])  # -0.54
-
-a["fa_corr_06vs07"].corr(a["tck_mean_T01"])   # -0.74
-a["fa_corr_06vs07"].corr(a["tck_count_T01"])   # 0.5
-
-
-
-a["dice_voxels_comAL_06vscomAL_07"].corr(a["noise_T01"])   # -0.07
-a[0:10]["dice_voxels_comAL_06vscomAL_07"].corr(a[0:10]["noise_T01"])  # -0.50
-a["dice_voxels_comAL_06vscomAL_07"].corr(a["tck_mean_T01"])   # -0.78
-a["dice_voxels_comAL_06vscomAL_07"].corr(a["tck_count_T01"])   # 0.68
-a[5:-5]["dice_voxels_comAL_06vscomAL_07"].corr(a[5:-5]["tck_mean_T01"])
+"""
 
 plot_repro_factors(pw_fa_ns_mt_st,"dice_voxels_comAL_06vscomAL_07", "noise_T01")
 sns.set_style("darkgrid")
 def plot_repro_factors(data, repro, factor):
+    plt.close()
     data = data[((data[repro].notna()) & (data[factor].notna()))]
     a = data.groupby("TCK").mean()
     a = a.sort_values(by=repro).reset_index()
