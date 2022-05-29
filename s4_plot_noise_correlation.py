@@ -127,10 +127,29 @@ sns.heatmap(corr_heat.loc[COM], annot=True, fmt=".2f", cmap=cmap,
                     ax = ax[1])
 plt.show()
 
+def corrdot(*args, **kwargs):
+    corr_r = args[0].corr(args[1], 'pearson')
+    corr_text = f"{corr_r:2.2f}".replace("0.", ".")
+    ax = plt.gca()
+    #ax.set_axis_off()
+    marker_size = abs(corr_r) * 10000
+    ax.scatter([.5], [.5], marker_size, [corr_r], alpha=0.6, cmap="RdBu_r",
+               vmin=-1, vmax=1, transform=ax.transAxes)
+    font_size = abs(corr_r) * 40 + 5
+    ax.annotate(corr_text, [.5, .5,],  xycoords="axes fraction",
+                ha='center', va='center', fontsize=font_size)
+sns.set(style='white', font_scale=1.6)
+g = sns.PairGrid(b, aspect=1.4, diag_sharey=False, 
+                    x_vars=factors, y_vars=TRT)
+g.map_offdiag(corrdot)
+#g.map_offdiag(sns.regplot)
+plt.show()
+
+
 plt.close()
 sns.set(style='white', font_scale=1.6)
 fig, axes = plt.subplots(4,3)
-for ind, ax in zip(itertools.product(TRT, factors), axes.flatten()):
+for ind, ax in zip(itertools.product(COM, factors), axes.flatten()):
     corr_r = corr_heat.loc[ind[0]][ind[1]]
     corr_text = f"{corr_r:2.2f}".replace("0.", ".")
     if 0.209 < abs(corr_r) < 0.27:
@@ -141,7 +160,9 @@ for ind, ax in zip(itertools.product(TRT, factors), axes.flatten()):
         sig_text= "***"
     else: sig_text = ""
     marker_size = abs(corr_r)*10000
-    ax.set_axis_off()
+    #ax.set_axis_off()
+    ax.set(xticklabels=[], yticklabels=[])
+    ax.set(xlabel=ind[1], ylabel=ind[0])
     ax.scatter([.5],[.5], marker_size, [corr_r],
             alpha = 0.6, vmin=-1,vmax=1, cmap = cmap)
     font_size = abs(corr_r) * 40 + 5       
@@ -150,6 +171,9 @@ for ind, ax in zip(itertools.product(TRT, factors), axes.flatten()):
     ax.annotate(sig_text, [.5, .7,],  xycoords="axes fraction",
                 ha='center', va='center',
                 color='red', fontsize=20)
+for ax in axes.flat:
+    ax.label_outer()
+plt.subplots_adjust(hspace=.0, wspace=0)
 plt.show()
 
 sns.set_style("darkgrid")
@@ -159,38 +183,3 @@ f2_ax1 = fig2.add_subplot(gs[0:3, 0])
 palette = sns.color_palette("Paired")
 order = ["L_OR","R_OR","L_AR", "R_AR", "L_MR", "R_MR", "L_DT", "R_DT"]
 # FA profile 
-
-tmp = profile[(profile["analysis"].isin([1,2])) & (profile["TCK"]=='L_MR_M1') &
-              (profile["ses"]=="T01")]
-tmp["analysis"] = tmp["analysis"].map(lambda x : f"compute_0{str(x)}")
-f2_ax1 = sns.lineplot(data=tmp, x="ind", y="fa", hue="analysis",
-                   ci="sd", style = "analysis", palette = ["Grey", "Green"] )
-f2_ax1.set_title('gs[0, :]')
-f2_ax2 = fig2.add_subplot(gs[3:6, 0])
-
-# FA correlation dist
-f2_ax2 = sns.stripplot(x="TCK", y = "corr", data = correlation,
-                       order = order, palette = palette, rasterized=True)
-f2_ax2.set(xlabel="fiber group label")
-
-f2_ax3 = fig2.add_subplot(gs[0:2, 1])
-f2_ax3 = sns.stripplot(x="tract", y = "bundle_adjacency_voxels", data = pairwise,
-                    order= order, palette = palette,
-                    rasterized=True)
-f2_ax3.set(xticklabels=[])
-f2_ax3.set(xlabel=None)
-
-f2_ax4 = fig2.add_subplot(gs[2:4, 1])
-f2_ax4 = sns.stripplot(x="tract", y = "dice_voxels", data = pairwise,
-                       order = order, palette = palette, rasterized=True)
-f2_ax4.set(xticklabels=[])
-f2_ax4.set(xlabel=None)
-
-f2_ax5 = fig2.add_subplot(gs[4:6, 1])
-f2_ax5 = sns.stripplot(x="tract", y = "density_correlation", data = pairwise,
-                       order = order, palette = palette, rasterized=True)
-f2_ax5.set(xlabel="fiber group label")
-
-fig_dir = r"F:\TESTDATA\GIT\THATRACT_paper\figures"
-fig2.set_size_inches(9.88,4.93)
-fig2.savefig(f"{fig_dir}\Fig2_computational_new.svg", dpi=300, bbox_inches='tight')
