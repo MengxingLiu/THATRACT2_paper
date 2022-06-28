@@ -7,7 +7,7 @@ import scipy,random, matplotlib, itertools, glob, os, platform, getpass, re
 import numpy as np
 import matplotlib.gridspec as gridspec
 from pathlib import Path
-
+plt.rcParams['svg.fonttype'] = 'none'
 if getpass.getuser() == "mengxing":
     git_dir = Path("/home/mengxing/GIT/THATRACT2_paper")
 elif getpass.getuser() == "lmengxing":
@@ -30,7 +30,12 @@ for col in pw_fa_ns_mt_st.columns:
 data = pw_fa_ns_mt_st.copy()
 a = data.groupby("TCK").mean()
 a = a.reset_index()
-b = a[~a["TCK"].str.contains("Mamm")]
+
+groups = pd.read_csv(raw_csv / "groups.csv")
+tcks = []
+for x in groups.columns:
+    tcks = tcks + list(groups[x][groups[x].notna()])
+b = a[a["TCK"].isin(tcks)]
 factors = ["noise_T01", "tck_mean_T01", "tck_count_T01"]
 for i in factors:
     y = i
@@ -106,11 +111,11 @@ corr_heat = corr_heat.groupby("repro").max()
 
 TRT = ['test-retest_AL_07_fa_Fisher_Z',
         'bundle_adjacency_voxels_T01vsT02',
-       'density_correlation_T01vsT02_Fisher_z',
-       'dice_voxels_T01vsT02_ln']
+        'dice_voxels_T01vsT02_ln',
+       'density_correlation_T01vsT02_Fisher_z' ]
 COM = ['AL_all_fa_Fisher_Z', 'bundle_adjacency_voxels_comAL_all_average',
-       'density_correlation_comAL_all_average_Fisher_z',
-       'dice_voxels_comAL_all_average_ln']
+       'dice_voxels_comAL_all_average_ln',
+       'density_correlation_comAL_all_average_Fisher_z']
 fig, ax = plt.subplots(1,2)
 cmap = "RdBu_r"
 cmap = sns.diverging_palette(0, 230, 90, 60, as_cmap=True)
@@ -149,18 +154,21 @@ plt.show()
 plt.close()
 sns.set(style='white', font_scale=1.6)
 fig, axes = plt.subplots(4,3)
-for ind, ax in zip(itertools.product(COM, factors), axes.flatten()):
+for ind, ax in zip(itertools.product(TRT, factors), axes.flatten()):
     corr_r = corr_heat.loc[ind[0]][ind[1]]
+    # if it's bundle adjacency, reverse symbol
+    if "adjacency" in ind[0]:
+        corr_r = -corr_r
     corr_text = f"{corr_r:2.2f}".replace("0.", ".")
     if 0.209 < abs(corr_r) < 0.27:
         sig_text = "*"
     elif 0.27 < abs(corr_r) < 0.34:
         sig_text = "**"
-    elif 0.24 < abs(corr_r) < 1: 
+    elif 0.34 < abs(corr_r) < 1: 
         sig_text= "***"
     else: sig_text = ""
     marker_size = abs(corr_r)*10000
-    #ax.set_axis_off()
+    ax.set_axis_off()
     ax.set(xticklabels=[], yticklabels=[])
     ax.set(xlabel=ind[1], ylabel=ind[0])
     ax.scatter([.5],[.5], marker_size, [corr_r],
@@ -171,15 +179,19 @@ for ind, ax in zip(itertools.product(COM, factors), axes.flatten()):
     ax.annotate(sig_text, [.5, .7,],  xycoords="axes fraction",
                 ha='center', va='center',
                 color='red', fontsize=20)
+    
 for ax in axes.flat:
     ax.label_outer()
+
 plt.subplots_adjust(hspace=.0, wspace=0)
 plt.show()
 
-sns.set_style("darkgrid")
-fig2 = plt.figure(constrained_layout=True)
-gs = fig2.add_gridspec(6, 2)
-f2_ax1 = fig2.add_subplot(gs[0:3, 0])
-palette = sns.color_palette("Paired")
-order = ["L_OR","R_OR","L_AR", "R_AR", "L_MR", "R_MR", "L_DT", "R_DT"]
-# FA profile 
+# print color bar
+a = np.array([[1,-1]])
+plt.figure(figsize=(9, 1.5))
+img = plt.imshow(a, cmap=cmap)
+plt.gca().set_visible(False)
+cax = plt.axes([0.1, 0.2, 0.8, 0.6])
+plt.colorbar(orientation="horizontal", cax=cax)
+plt.show()
+

@@ -40,8 +40,10 @@ pairwise["dice_voxels"] = pairwise["dice_voxels"].astype(float)
 pairwise["density_correlation"] = pairwise["density_correlation"].astype(float)
 pairwise.to_csv(raw_csv_dir / "pairwise_agreement_all_final.csv", index=False)
 
-
-
+profile = pd.read_csv( raw_csv_dir / "RTP_Profile_AL_compute.csv")
+profile["TCK"]=profile["TCK"].str[1:]
+profile = profile.replace({"TCK":tract_dic})
+profile.to_csv(raw_csv_dir / "RTP_Profile_AL_compute.csv", index=False)
 ## organise noise file
 noise = pd.read_csv(raw_csv_dir / "noise.csv")
 noise = noise.drop(noise[noise["SUBID"]=="SUBID"].index )

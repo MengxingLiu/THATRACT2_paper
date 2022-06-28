@@ -4,287 +4,165 @@ Created on Fri Feb 12 14:05:49 2021
 
 @author: lmengxing
 """
+import os
+os.environ['FOR_DISABLE_CONSOLE_CTRL_HANDLER'] = '1'
 import pandas as pd
 import seaborn as sns
-import itertools
-import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
-import scipy
+import scipy,random, matplotlib, itertools, glob, os, platform, getpass
 import numpy as np
-import random
 import matplotlib.gridspec as gridspec
-""" calculate results for compute vs recompute
-tractDic = {"LKN27":"L_OR_05", "LKN28":"R_OR_05", "LKN29":"L_OR_1", "LKN30":"R_OR_1",
-            "LKN31":"L_AR_belt-3", "LKN32":"L_AR_belt-4",
-            "LKN33":"L_AR_A1-3", "LKN34": "L_AR_A1-4",
-            "LKN35":"R_AR_belt-3", "LKN36":"R_AR_belt-4",
-            "LKN37":"R_AR_A1-3", "LKN38":"R_AR_A1-4",
-            "LKN39":"L_DT-3", "LKN40":"L_DT-4",
-            "LKN41":"R_DT-3", "LKN42":"R_DT-4",
-            "LKN43":"L_MR_M1", "LKN44":"R_MR_M1",
-            "LKN45":"L_MR_dlPreM", "LKN46":"R_MR_dlPreM", 
-            "LKN47":"L_MR_S1", "LKN48":"R_MR_S1"      }
+from pathlib import Path
+import matplotlib.ticker as ticker
+plt.rcParams['svg.fonttype'] = 'none'
+if getpass.getuser() == "mengxing":
+    git_dir = Path("/home/mengxing/GIT/THATRACT2_paper")
+elif getpass.getuser() == "lmengxing":
+    if platform.system() == "Linux":
+        git_dir = Path("/bcbl/home/home_g-m/lmengxing/TESTDATA/GIT/THATRACT2_paper")
+    elif platform.system() == "Windows":
+        git_dir = Path("F:\TESTDATA\GIT\THATRACT2_paper")
+raw_csv = Path(f"{git_dir}/raw_csv")
+fig_dir = Path(f"{git_dir}/figures")
 
 
-list1 = [f"{i:02d}" for i in range(1,11)]
-list1 = range(1,11)
-a = itertools.combinations(list1, 2)
-df = pd.read_csv("RTP_Profile_compute.csv")
+profile = pd.read_csv( raw_csv / "RTP_Profile_AL_compute.csv")
+correlation = pd.read_csv( raw_csv / "correlation_all_index.csv")
+pairwise = pd.read_csv( raw_csv / "pairwise_agreement_all_final.csv")
+pairwise = pairwise[(~(pairwise.dice_voxels==0) & 
+                    ~(pairwise.density_correlation==0))]
+# select computational results
+#correlation = correlation[correlation["btw"]=="AL_06vsAL_07"]
+#pairwise = pairwise[pairwise.btw=="comAL_06vscomAL_07"]
 
-con_fa_ana = pd.DataFrame(columns = ["subID", "TCK", "corr", "btw"])
 
-for i in a:
+def plot_fig(btw, profile=profile, correlation=correlation, 
+                pairwise=pairwise, tck_to_plot=tck_to_plot):
     
-    df_ana_x = df[ (df["ses"] == "T01") & (df["analysis"] == i[0])]
-    df_ana_y = df[ (df["ses"] == "T01") & (df["analysis"] == i[1])]
-    TCKS = df_ana_y.TCK.unique()
-    ses = df_ana_y.ses.unique()
-    SUBS = df_ana_y.subID.unique()
-    ind = 'fa'
-    # correlation of fa
-    for tck, sub in itertools.product(TCKS, SUBS):
-        a = df_ana_x.loc[(df_ana_x["TCK"]==tck) & (df_ana_x["ses"]=="T01") 
-                    & (df_ana_x["subID"]==sub), "fa"]
-        if len(a)==0 or a.isnull().values.any():
-            continue
-        b = df_ana_y.loc[(df_ana_y["TCK"]==tck) & (df_ana_y["ses"]=="T01") 
-                    & (df_ana_y["subID"]==sub), "fa"]
-        if len(b)==0 or b.isnull().values.any():
-            continue
-        
-        c, _ = scipy.stats.pearsonr(a,b)
-        d, _ = scipy.stats.pearsonr(a[::-1],b)
-        c = max(c,d)    
-        print(tck, sub, f"{i[0]} and {i[1]}")
-        con_fa_ana = con_fa_ana.append({"subID":sub, "TCK":tck, 
-                                              "corr":c, 
-                                              "btw":f"{i[0]}vs{i[1]}"}, 
-                                             ignore_index=True)
-        
-con_fa_ana["TCK"] = con_fa_ana.TCK.map(lambda x : "L"+x)
-con_fa_ana = con_fa_ana.replace({"TCK":tractDic} )
-con_fa_ana = con_fa_ana.replace({"TCK":newlabel})
-con_fa_ana.to_csv("correlation_fa_compute.csv", index=False)
+    profile = profile[profile["TCK"].isin(tck_to_plot)]
+    correlation = correlation[correlation["TCK"].isin(tck_to_plot)]
+    pairwise = pairwise[pairwise["TCK"].isin(tck_to_plot)]
+    size=3
+    if btw == "compute":
+        tmp = profile[(profile["analysis"].isin(["AL_06","AL_07"])) & 
+                        (profile["TCK"]==tck_to_plot[0]) &
+                        (profile["ses"]=="T01")]
+        #tmp["analysis"] = tmp["analysis"].map(lambda x : f"compute_{x}")
+        hue_pro = "analysis"
+        correlation = correlation[  ~(correlation["btw"]=="test-retest_AL_07")]
+        pairwise = pairwise[  ~(pairwise["btw"]=="T01vsT02")]
+        labels = ["1st computation", "2nd computation"]
+    elif btw == "test-retest":
+        tmp = profile[(profile["TCK"]==tck_to_plot[0])]
+        tmp = tmp[tmp["subID"].isin(tmp[tmp["ses"]=="T02"].subID.unique())]
+        tmp = tmp[tmp["analysis"]=="AL_07"]
+        hue_pro = "ses"
+        labels = ["test", "retest"]
+        correlation = correlation[  (correlation["btw"]=="test-retest_AL_07")]
+        pairwise = pairwise[  (pairwise["btw"]=="T01vsT02")]
 
-" calculate descriptions"
-
-correlation = pd.read_csv("correlation_fa_compute.csv")
-pairwise = pd.read_csv("pairwise_agreement_compute.csv")
-
-pairwise = pairwise.replace({"tract":tractDic} )
-
-tck_to_plot = ["L_OR_05", "R_OR_05", "L_AR_A1-4", "R_AR_A1-4", 
-               "L_MR_M1", "R_MR_M1", "L_DT-4", "R_DT-4"]
-profile = profile[profile["TCK"].isin(tck_to_plot)]
-correlation = correlation[correlation["TCK"].isin(tck_to_plot)]
-correlation["TCK"] = correlation["TCK"].map(lambda x : x[0:4])
-                                                 
-pairwise = pairwise[pairwise["tract"].isin(tck_to_plot)]
-pairwise["tract"] = pairwise["tract"].map(lambda x : x[0:4])
-pairwise["bundle_adjacency_voxels"] = pairwise["bundle_adjacency_voxels"].astype(float)
-pairwise["dice_voxels"] = pairwise["dice_voxels"].astype(float)
-pairwise["density_correlation"] = pairwise["density_correlation"].astype(float)
-
-correlation.groupby("TCK").apply(np.mean)
-correlation.groupby("TCK").describe().to_csv("correlation_compute_description.csv")
-pairwise.groupby("tract").describe().to_csv("pairwise_agreement_compute_description.csv")
-         
-"""
-
-""" calculate results for test vs retest
-csv_dir = "F:\TESTDATA\THATRACT_paper\csv"
-
-df = pd.read_csv(f"{csv_dir}\RTP_Profile.csv")
-
-con_fa_ana = pd.DataFrame(columns = ["subID", "TCK", "corr", "btw"])
-
-df_ana_x = df[ (df["ses"] == "T01") & (df["analysis"] == 1)]
-df_ana_y = df[ (df["ses"] == "T02") & (df["analysis"] == 1)]
-TCKS = df_ana_y.TCK.unique()
-ses = df_ana_y.ses.unique()
-SUBS = df_ana_y.subID.unique()
-ind = 'fa'
-# correlation of fa
-for tck, sub in itertools.product(TCKS, SUBS):
-    a = df_ana_x.loc[(df_ana_x["TCK"]==tck) & (df_ana_x["ses"]=="T01") 
-                & (df_ana_x["subID"]==sub), "fa"]
-    if len(a)==0 or a.isnull().values.any():
-        continue
-    b = df_ana_y.loc[(df_ana_y["TCK"]==tck) & (df_ana_y["ses"]=="T02") 
-                & (df_ana_y["subID"]==sub), "fa"]
-    if len(b)==0 or b.isnull().values.any():
-        continue
+    palette = sns.color_palette("tab20") + sns.color_palette("tab20b")
+    order = list(tck_to_plot).copy()
+    xtick = [x[2:] for x in order]
+    new_palette = palette.copy() * (round(len(order)/len(palette))+1)
+    i = 2
     
-    c, _ = scipy.stats.pearsonr(a,b)
-    d, _ = scipy.stats.pearsonr(a[::-1],b)
-    c = max(c,d)    
-    print(tck, sub, "T01 vs T02")
-    con_fa_ana = con_fa_ana.append({"subID":sub, "TCK":tck, 
-                                          "corr":c, 
-                                          "btw":"T01vsT02"}, 
-                                         ignore_index=True)
-    
-con_fa_ana["TCK"] = con_fa_ana.TCK.map(lambda x : "L"+x)
-con_fa_ana = con_fa_ana.replace({"TCK":tractDic} )
-con_fa_ana = con_fa_ana.replace({"TCK":newlabel})
-con_fa_ana.to_csv("correlation_fa.csv", index=False)  
+    while i < len(order):
+        # add space between bundle groups
+        order.insert(i, "")
+        order.insert(i+1, "")
+        new_palette.insert(i, palette[0]);new_palette.insert(i, palette[0])
+        i += (3+1)
 
-" calculate descriptions "
+    # FA profile 
+    print(order)
+    dodge = 0.2
 
-correlation = pd.read_csv("correlation_fa.csv")
-pairwise = pd.read_csv("pairwise_agreement.csv")
-pairwise = pairwise.replace({"tract":tractDic} )
+    sns.set_style("darkgrid")
+    sns.set(font_scale = 2)
+    fig2 = plt.figure(constrained_layout=True)
+    gs = fig2.add_gridspec(6, 2)
+    f2_ax1 = fig2.add_subplot(gs[0:3, 0])
+    f2_ax1 = sns.lineplot(data=tmp, x="ind", y="fa", hue=hue_pro,
+                    ci="sd", style = hue_pro, palette = ["Grey", "Green"] )
+    f2_ax1.set(ylabel="FA")
+    f2_ax1.legend(labels=labels)
+    f2_ax1.set_title('gs[0, :]')
 
-tck_to_plot = ["L_OR_05", "R_OR_05", "L_AR_A1-4", "R_AR_A1-4", 
-               "L_MT_M1", "R_MT_M1", "L_DT-4", "R_DT-4"]
-profile = profile[profile["TCK"].isin(tck_to_plot)]
-correlation = correlation[correlation["TCK"].isin(tck_to_plot)]
-correlation["TCK"] = correlation["TCK"].map(lambda x : x[0:4])
-                                                 
-pairwise = pairwise[pairwise["tract"].isin(tck_to_plot)]
-pairwise["tract"] = pairwise["tract"].map(lambda x : x[0:4])
-correlation.groupby("TCK").apply(np.mean)
+    f2_ax2 = fig2.add_subplot(gs[3:6, 0])
+    # FA correlation dist
+    f2_ax2 = sns.stripplot(x="TCK", y = "fa_y", data = correlation,
+                        order = order, palette = new_palette,
+                        rasterized=True, size=size)
+    f2_ax2.set(xlabel="fiber group label")
+    f2_ax2.set(ylabel="r")
+    f2_ax2.xaxis.set_major_locator(ticker.MultipleLocator(2))
+    plt.xticks(rotation=45,ha='right')
 
-correlation.groupby("TCK").describe().to_csv("correlation_description.csv")
-pairwise.groupby("tract").describe().to_csv("pairwise_agreement_description.csv")
-           
-"""
+    f2_ax3 = fig2.add_subplot(gs[0:2, 1])
+    f2_ax3 = sns.stripplot(x="TCK", y = "bundle_adjacency_voxels", data = pairwise,
+                        order= order, palette = new_palette,
+                        rasterized=True, size=size)
+    f2_ax3.set(xticklabels=[])
+    f2_ax3.set(ylabel="bundle adjacency")
+    f2_ax3.set(xlabel=None)
 
-""" plot Fig. 2 
-csv_dir = "F:\TESTDATA\GIT\THATRACT_paper\csv"
-profile = pd.read_csv(f"{csv_dir}\RTP_Profile_compute.csv")
-correlation = pd.read_csv(f"{csv_dir}\correlation_fa_compute.csv")
-pairwise = pd.read_csv(f"{csv_dir}\pairwise_agreement_compute.csv")
+    #if btw=="compute": f2_ax3.set_yticks([0,0.5,1.0,1.5])
 
-# change tck labels
-profile["TCK"] = profile.TCK.map(lambda x : "L"+x)
-profile = profile.replace({"TCK":tractDic} )
+    f2_ax4 = fig2.add_subplot(gs[2:4, 1])
+    f2_ax4 = sns.stripplot(x="TCK", y = "dice_voxels", data = pairwise,
+                        order = order, palette = new_palette, 
+                        rasterized=True, size=size)
+    f2_ax4.set(xticklabels=[])
+    f2_ax4.set(ylabel="Dice index")
+    f2_ax4.set(xlabel=None)
 
-pairwise = pairwise.replace({"tract":tractDic} )
+    f2_ax5 = fig2.add_subplot(gs[4:6, 1])
+    f2_ax5 = sns.stripplot(x="TCK", y = "density_correlation", data = pairwise,
+                        order = order,  palette = new_palette, 
+                        rasterized=True, size=size)
+    f2_ax5.set(xlabel="fiber group label")   
+    f2_ax5.set(ylabel="density correlation") 
+    f2_ax5.xaxis.set_major_locator(ticker.MultipleLocator(2))
+    plt.xticks(rotation=45,ha='right')
 
-tck_to_plot = ["L_OR_05", "R_OR_05", "L_AR_A1-4", "R_AR_A1-4", 
-               "L_MR_M1", "R_MR_M1", "L_DT-4", "R_DT-4"]
-profile = profile[profile["TCK"].isin(tck_to_plot)]
+    return fig2 
 
-correlation = correlation.replace({"TCK":{"L_MT_M1":"L_MR_M1","R_MT_M1":"R_MR_M1"}})
-correlation = correlation[correlation["TCK"].isin(tck_to_plot)]
-correlation["TCK"] = correlation["TCK"].map(lambda x : x[0:4])
-                                                 
-pairwise = pairwise[pairwise["tract"].isin(tck_to_plot)]
-pairwise["tract"] = pairwise["tract"].map(lambda x : x[0:4])
+groups = pd.read_csv(raw_csv / "groups.csv")
+tck_to_plot = groups.AN[groups.AN.notna()]
+profile_tmp = profile[profile["TCK"].isin(tck_to_plot)]
+correlation_tmp = correlation[correlation["TCK"].isin(tck_to_plot)]                                                 
+pairwise_tmp = pairwise[pairwise["TCK"].isin(tck_to_plot)]
 
-pairwise["bundle_adjacency_voxels"] = pairwise["bundle_adjacency_voxels"].astype(float)
-pairwise["dice_voxels"] = pairwise["dice_voxels"].astype(float)
-pairwise["density_correlation"] = pairwise["density_correlation"].astype(float)
+fig2 = plot_fig("compute", profile_tmp, correlation_tmp, pairwise_tmp, tck_to_plot)
+plt.show()
+fig2 = plot_fig("test-retest", profile_tmp, correlation_tmp, pairwise_tmp, tck_to_plot)
+plt.show()
 
-sns.set_style("darkgrid")
-fig2 = plt.figure(constrained_layout=True)
-gs = fig2.add_gridspec(6, 2)
-f2_ax1 = fig2.add_subplot(gs[0:3, 0])
-palette = sns.color_palette("Paired")
-order = ["L_OR","R_OR","L_AR", "R_AR", "L_MR", "R_MR", "L_DT", "R_DT"]
-# FA profile 
-
-tmp = profile[(profile["analysis"].isin([1,2])) & (profile["TCK"]=='L_MR_M1') &
-              (profile["ses"]=="T01")]
-tmp["analysis"] = tmp["analysis"].map(lambda x : f"compute_0{str(x)}")
-f2_ax1 = sns.lineplot(data=tmp, x="ind", y="fa", hue="analysis",
-                   ci="sd", style = "analysis", palette = ["Grey", "Green"] )
-f2_ax1.set_title('gs[0, :]')
-f2_ax2 = fig2.add_subplot(gs[3:6, 0])
-
-# FA correlation dist
-f2_ax2 = sns.stripplot(x="TCK", y = "corr", data = correlation,
-                       order = order, palette = palette, rasterized=True)
-f2_ax2.set(xlabel="fiber group label")
-
-f2_ax3 = fig2.add_subplot(gs[0:2, 1])
-f2_ax3 = sns.stripplot(x="tract", y = "bundle_adjacency_voxels", data = pairwise,
-                    order= order, palette = palette,
-                    rasterized=True)
-f2_ax3.set(xticklabels=[])
-f2_ax3.set(xlabel=None)
-
-f2_ax4 = fig2.add_subplot(gs[2:4, 1])
-f2_ax4 = sns.stripplot(x="tract", y = "dice_voxels", data = pairwise,
-                       order = order, palette = palette, rasterized=True)
-f2_ax4.set(xticklabels=[])
-f2_ax4.set(xlabel=None)
-
-f2_ax5 = fig2.add_subplot(gs[4:6, 1])
-f2_ax5 = sns.stripplot(x="tract", y = "density_correlation", data = pairwise,
-                       order = order, palette = palette, rasterized=True)
-f2_ax5.set(xlabel="fiber group label")
-
-fig_dir = r"F:\TESTDATA\GIT\THATRACT_paper\figures"
-fig2.set_size_inches(9.88,4.93)
-fig2.savefig(f"{fig_dir}\Fig2_computational_new.svg", dpi=300, bbox_inches='tight')
-"""
-
- # plot Fig.3 
-csv_dir = r"F:\TESTDATA\GIT\THATRACT_paper\csv"
-profile = pd.read_csv(f"{csv_dir}\RTP_Profile.csv")
-correlation = pd.read_csv(f"{csv_dir}\correlation_fa.csv")
-pairwise = pd.read_csv(f"{csv_dir}\pairwise_agreement.csv")
-
-# change tck labels
-profile["TCK"] = profile.TCK.map(lambda x : "L"+x)
-profile = profile.replace({"TCK":tractDic} )
-pairwise = pairwise.replace({"tract":tractDic} )
-
-tck_to_plot = ["L_OR_05", "R_OR_05", "L_AR_A1-4", "R_AR_A1-4", 
-               "L_MR_M1", "R_MR_M1", "L_DT-4", "R_DT-4"]
-profile = profile[profile["TCK"].isin(tck_to_plot)]
+fig2.set_size_inches(9.88,5.93)
+fig2.savefig( fig_dir / "Fig2_computational_new.svg", dpi=300, bbox_inches='tight')
 
 
-profile = profile[profile["subID"].isin(profile[profile["ses"]=="T02"].subID.unique())]
-correlation = correlation.replace({"TCK":{"L_MT_M1":"L_MR_M1","R_MT_M1":"R_MR_M1"}})
-correlation = correlation[correlation["TCK"].isin(tck_to_plot)]
-correlation["TCK"] = correlation["TCK"].map(lambda x : x[0:4])
-                                                 
-pairwise = pairwise[pairwise["tract"].isin(tck_to_plot)]
-pairwise["tract"] = pairwise["tract"].map(lambda x : x[0:4])
+# generate shell script to visualize tract streamlines
+# select only the left hemisphere
+palette = sns.color_palette("tab20") + sns.color_palette("tab20b")
+palette = palette[::2]
+# palette = [matplotlib.colors.to_hex(x) for x in palette]
 
-pairwise["bundle_adjacency_voxels"] = pairwise["bundle_adjacency_voxels"].astype(float)
-pairwise["dice_voxels"] = pairwise["dice_voxels"].astype(float)
-pairwise["density_correlation"] = pairwise["density_correlation"].astype(float)
+sub="S038"; ana="AL_07"
+base_dir=f"/bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-{ana}/sub-{sub}/ses-T01/output"
 
-fig3 = plt.figure(constrained_layout=True)
-gs = fig3.add_gridspec(6, 2)
-f3_ax1 = fig3.add_subplot(gs[0:3, 0])
-
-# FA profile 
-#tmp = profile[(profile["TCK"]=='L_MR_M1') & (profile["subID"]=="S038")]
-tmp = profile[(profile["TCK"]=='L_MR_M1')]
-tmp = tmp[tmp["subID"].isin(tmp[tmp["ses"]=="T02"].subID.unique())]
-f3_ax1 = sns.lineplot(data=tmp, x="ind", y="fa", hue="ses",
-                   style="ses", ci="sd", palette = ["Grey", "Green"] )
-# FA correlation dist
-f3_ax2 = fig3.add_subplot(gs[3:6, 0])
-f3_ax2 = sns.stripplot(x="TCK", y = "corr", data = correlation,
-                       order = order, palette = palette, rasterized=True)
-f3_ax2.set(xlabel="fiber group label")
-
-f3_ax3 = fig3.add_subplot(gs[0:2, 1])
-
-f3_ax3 = sns.stripplot(x="tract", y = "bundle_adjacency_voxels",
-                       data = pairwise, order = order, palette = palette,
-                       rasterized=True)
-f3_ax3.set(xticklabels=[])
-f3_ax3.set(xlabel=None)
-
-f3_ax4 = fig3.add_subplot(gs[2:4, 1])
-f3_ax4 = sns.stripplot(x="tract", y = "dice_voxels", data = pairwise, 
-                       order = order, palette = palette, rasterized=True)
-f3_ax4.set(xticklabels=[])
-f3_ax4.set(xlabel=None)
-
-f3_ax5 = fig3.add_subplot(gs[4:6, 1])
-f3_ax5 = sns.stripplot(x="tract", y = "density_correlation", data = pairwise,
-                       order = order, palette = palette, rasterized=True)
-f3_ax5.set(xlabel="fiber group label")
-
-fig3.set_size_inches(9.88,4.93)
-fig3.savefig(f"{fig_dir}\Fig3_test-retest_new.svg", dpi=300, format = "svg", bbox_inches='tight')
-"""
+tcks = [x for i in tck_to_plot[::2] for x, y in tract_dic.items() if y==i]            
+# start writing shell script
+with open("s5_visualization.sh", 'w') as f:
+    f.write("#!/bin/bash\n")
+    f.write(f"vglrun mrview \\\n")
+    f.write(f"\t-load {base_dir}/flywheel/v0/output/RTP/fs/brainmask.nii.gz \\\n")
+    for tck, col in zip(tcks, palette):
+        col = tuple(x*255 for x in col)
+        f.write(f"\t-tractography.load {base_dir}/{tck}_clean.tck \\\n")
+        f.write(f"\t-tractography.lighting 1 \\\n")
+        f.write(f"\t-tractography.colour {col[0]},{col[1]},{col[2]} \\\n")
+    f.write("\t-mode 3 -noannotations -fullscreen \n")
+f.close()
