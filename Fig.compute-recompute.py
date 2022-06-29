@@ -43,7 +43,7 @@ def plot_fig(btw, profile=profile, correlation=correlation,
     profile = profile[profile["TCK"].isin(tck_to_plot)]
     correlation = correlation[correlation["TCK"].isin(tck_to_plot)]
     pairwise = pairwise[pairwise["TCK"].isin(tck_to_plot)]
-    size=3
+    size=7
     if btw == "compute":
         tmp = profile[(profile["analysis"].isin(["AL_06","AL_07"])) & 
                         (profile["TCK"]==tck_to_plot[0]) &
@@ -88,7 +88,7 @@ def plot_fig(btw, profile=profile, correlation=correlation,
                     ci="sd", style = hue_pro, palette = ["Grey", "Green"] )
     f2_ax1.set(ylabel="FA")
     f2_ax1.legend(labels=labels)
-    f2_ax1.set_title('gs[0, :]')
+    
 
     f2_ax2 = fig2.add_subplot(gs[3:6, 0])
     # FA correlation dist
@@ -130,7 +130,8 @@ def plot_fig(btw, profile=profile, correlation=correlation,
     return fig2 
 
 groups = pd.read_csv(raw_csv / "groups.csv")
-tck_to_plot = groups.AN[groups.AN.notna()]
+group = "Orbital"
+tck_to_plot = groups[group][groups[group].notna()]
 profile_tmp = profile[profile["TCK"].isin(tck_to_plot)]
 correlation_tmp = correlation[correlation["TCK"].isin(tck_to_plot)]                                                 
 pairwise_tmp = pairwise[pairwise["TCK"].isin(tck_to_plot)]
@@ -159,8 +160,13 @@ with open("s5_visualization.sh", 'w') as f:
     f.write("#!/bin/bash\n")
     f.write(f"vglrun mrview \\\n")
     f.write(f"\t-load {base_dir}/flywheel/v0/output/RTP/fs/brainmask.nii.gz \\\n")
-    for tck, col in zip(tcks, palette):
+    for tck, col, roi in zip(tcks, palette, tck_to_plot[::2]):
         col = tuple(x*255 for x in col)
+        f.write(f"\t-overlay.load {base_dir}/flywheel/v0/output/RTP/fs/ROIs/{roi}_dil-1.nii.gz \\\n")
+        f.write(f"\t-overlay.colour {col[0]},{col[1]},{col[2]} \\\n")
+        f.write(f"\t-overlay.intensity 0.2,1 \\\n")
+        f.write(f"\t-overlay.threshold_min 0.2 \\\n")
+        f.write(f"\t-overlay.threshold_max 1 \\\n")
         f.write(f"\t-tractography.load {base_dir}/{tck}_clean.tck \\\n")
         f.write(f"\t-tractography.lighting 1 \\\n")
         f.write(f"\t-tractography.colour {col[0]},{col[1]},{col[2]} \\\n")

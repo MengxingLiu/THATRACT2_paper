@@ -35,7 +35,7 @@ groups = pd.read_csv(raw_csv / "groups.csv")
 tcks = []
 for x in groups.columns:
     tcks = tcks + list(groups[x][groups[x].notna()])
-b = a[a["TCK"].isin(tcks)]
+b = a[a["TCK"].isin(tcks[:-2])]
 factors = ["noise_T01", "tck_mean_T01", "tck_count_T01"]
 for i in factors:
     y = i
@@ -154,7 +154,7 @@ plt.show()
 plt.close()
 sns.set(style='white', font_scale=1.6)
 fig, axes = plt.subplots(4,3)
-for ind, ax in zip(itertools.product(TRT, factors), axes.flatten()):
+for ind, ax in zip(itertools.product(COM, factors), axes.flatten()):
     corr_r = corr_heat.loc[ind[0]][ind[1]]
     # if it's bundle adjacency, reverse symbol
     if "adjacency" in ind[0]:
