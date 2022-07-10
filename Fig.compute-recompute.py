@@ -60,8 +60,7 @@ def plot_fig(btw, profile=profile, correlation=correlation,
         hue_pro = "ses"
         labels = ["test", "retest"]
         correlation = correlation[  (correlation["btw"]=="test-retest_AL_07")]
-        pairwise = pairwise[  (pairwise["btw"]=="T01vsT02")]
-
+        pairwise = pairwise[(pairwise["btw"]=="T01vsT02")]
     palette = sns.color_palette("tab20") + sns.color_palette("tab20b")
     order = list(tck_to_plot).copy()
     xtick = [x[2:] for x in order]
@@ -95,6 +94,10 @@ def plot_fig(btw, profile=profile, correlation=correlation,
     f2_ax2 = sns.stripplot(x="TCK", y = "fa_y", data = correlation,
                         order = order, palette = new_palette,
                         rasterized=True, size=size)
+    f2_ax2 = sns.boxplot(x="TCK", y = "fa_y", data = correlation,
+                        order = order, palette = new_palette, showfliers=False
+                        )
+    
     f2_ax2.set(xlabel="fiber group label")
     f2_ax2.set(ylabel="r")
     f2_ax2.xaxis.set_major_locator(ticker.MultipleLocator(2))
@@ -104,6 +107,8 @@ def plot_fig(btw, profile=profile, correlation=correlation,
     f2_ax3 = sns.stripplot(x="TCK", y = "bundle_adjacency_voxels", data = pairwise,
                         order= order, palette = new_palette,
                         rasterized=True, size=size)
+    f2_ax3 = sns.boxplot(x="TCK", y = "bundle_adjacency_voxels", data = pairwise,
+                        order= order, palette = new_palette,showfliers=False)   
     f2_ax3.set(xticklabels=[])
     f2_ax3.set(ylabel="bundle adjacency")
     f2_ax3.set(xlabel=None)
@@ -114,6 +119,9 @@ def plot_fig(btw, profile=profile, correlation=correlation,
     f2_ax4 = sns.stripplot(x="TCK", y = "dice_voxels", data = pairwise,
                         order = order, palette = new_palette, 
                         rasterized=True, size=size)
+    f2_ax4 = sns.boxplot(x="TCK", y = "dice_voxels", data = pairwise,
+                        order = order, palette = new_palette, 
+                        showfliers=False)
     f2_ax4.set(xticklabels=[])
     f2_ax4.set(ylabel="Dice index")
     f2_ax4.set(xlabel=None)
@@ -122,6 +130,9 @@ def plot_fig(btw, profile=profile, correlation=correlation,
     f2_ax5 = sns.stripplot(x="TCK", y = "density_correlation", data = pairwise,
                         order = order,  palette = new_palette, 
                         rasterized=True, size=size)
+    f2_ax5 = sns.boxplot(x="TCK", y = "density_correlation", data = pairwise,
+                        order = order,  palette = new_palette, 
+                        showfliers=False)
     f2_ax5.set(xlabel="fiber group label")   
     f2_ax5.set(ylabel="density correlation") 
     f2_ax5.xaxis.set_major_locator(ticker.MultipleLocator(2))
@@ -130,7 +141,7 @@ def plot_fig(btw, profile=profile, correlation=correlation,
     return fig2 
 
 groups = pd.read_csv(raw_csv / "groups.csv")
-group = "Orbital"
+group = "IFG"
 tck_to_plot = groups[group][groups[group].notna()]
 profile_tmp = profile[profile["TCK"].isin(tck_to_plot)]
 correlation_tmp = correlation[correlation["TCK"].isin(tck_to_plot)]                                                 
