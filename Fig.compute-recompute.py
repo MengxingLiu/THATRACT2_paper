@@ -37,6 +37,7 @@ pairwise = pairwise[(~(pairwise.dice_voxels==0) &
 #pairwise = pairwise[pairwise.btw=="comAL_06vscomAL_07"]
 
 
+
 def plot_fig(btw, profile=profile, correlation=correlation, 
                 pairwise=pairwise, tck_to_plot=tck_to_plot):
     
@@ -164,6 +165,8 @@ palette = palette[::2]
 
 sub="S038"; ana="AL_07"
 base_dir=f"/bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-{ana}/sub-{sub}/ses-T01/output"
+tractparams = pd.read_csv(git_dir / "tractparams_AL_final_both_hemi.csv")
+tract_dic = dict(zip(tractparams["slabel"], tractparams["roi2"]))
 
 tcks = [x for i in tck_to_plot[::2] for x, y in tract_dic.items() if y==i]            
 # start writing shell script
@@ -171,6 +174,7 @@ with open("s5_visualization.sh", 'w') as f:
     f.write("#!/bin/bash\n")
     f.write(f"vglrun mrview \\\n")
     f.write(f"\t-load {base_dir}/flywheel/v0/output/RTP/fs/brainmask.nii.gz \\\n")
+    f.write(f"\t-overlay.load {base_dir}/flywheel/v0/output/RTP/fs/ROIs/Left-MD_dil-1.nii.gz \\\n")
     for tck, col, roi in zip(tcks, palette, tck_to_plot[::2]):
         col = tuple(x*255 for x in col)
         f.write(f"\t-overlay.load {base_dir}/flywheel/v0/output/RTP/fs/ROIs/{roi}_dil-1.nii.gz \\\n")
@@ -183,3 +187,17 @@ with open("s5_visualization.sh", 'w') as f:
         f.write(f"\t-tractography.colour {col[0]},{col[1]},{col[2]} \\\n")
     f.write("\t-mode 3 -noannotations -fullscreen \n")
 f.close()
+
+import tract_3D
+import importlib
+importlib.reload(tract_3D)
+import tract_3D
+
+
+groups = pd.read_csv(raw_csv / "groups.csv")
+for group in groups.columns:
+    tck_to_plot = groups[group][groups[group].notna()]
+    tcks = {x:y for i in tck_to_plot[::2] for x, y in tract_dic.items() if y==i}
+    for (key, value), col, n in zip(tcks.items(), palette, range(len(tcks))):
+        tract_3D.tract_3D(bundle_filename=f"output/{key}_clean.tck", colors=col,
+                                        output=f"figures/{group}_{n:02d}_{value}.png", interactive=False)
