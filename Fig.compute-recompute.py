@@ -159,7 +159,7 @@ fig2.savefig( fig_dir / "Fig2_computational_new.svg", dpi=300, bbox_inches='tigh
 
 # generate shell script to visualize tract streamlines
 # select only the left hemisphere
-palette = sns.color_palette("tab20") + sns.color_palette("tab20b")
+palette = sns.color_palette("tab20") + sns.color_palette("tab20b") + sns.color_palette("tab20b")
 palette = palette[::2]
 # palette = [matplotlib.colors.to_hex(x) for x in palette]
 
@@ -168,9 +168,12 @@ base_dir=f"/bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-{ana}/sub-{sub}/ses-T
 tractparams = pd.read_csv(git_dir / "tractparams_AL_final_both_hemi.csv")
 tract_dic = dict(zip(tractparams["slabel"], tractparams["roi2"]))
 
-tcks = [x for i in tck_to_plot[::2] for x, y in tract_dic.items() if y==i]            
+tck_to_plot=tractparams.roi2
+# tcks = [x for i in tck_to_plot[::2] for x, y in tract_dic.items() if y==i]   
+tcks = [x for i in tck_to_plot[:47] for x, y in tract_dic.items() if y==i]   
+
 # start writing shell script
-with open("s5_visualization.sh", 'w') as f:
+with open("s5_visualization_all.sh", 'w') as f:
     f.write("#!/bin/bash\n")
     f.write(f"vglrun mrview \\\n")
     f.write(f"\t-load {base_dir}/flywheel/v0/output/RTP/fs/brainmask.nii.gz \\\n")
@@ -193,11 +196,43 @@ import importlib
 importlib.reload(tract_3D)
 import tract_3D
 
-
+x_cut = 128; y_cut = 118; z_cut = 153
+camera = ((-705.8306541647723, 529.2247187019981, 425.76215289175894),
+         (87.6887652403265, -14.697480338511443, 51.07560287191844), 
+         (0.31958863044278235, -0.17523275927439252, 0.9312124287018455))
 groups = pd.read_csv(raw_csv / "groups.csv")
+
+with open('render_params.json') as d:
+    render_params = json.load(d)
+
 for group in groups.columns:
     tck_to_plot = groups[group][groups[group].notna()]
     tcks = {x:y for i in tck_to_plot[::2] for x, y in tract_dic.items() if y==i}
     for (key, value), col, n in zip(tcks.items(), palette, range(len(tcks))):
+        view = tract_3D.tract_3D(bundle_filename=f"output/{key}_clean.tck", colors=col,
+                            x_cut = x_cut, y_cut = y_cut, z_cut = z_cut,
+                            camera = camera, interactive=True,
+                            output=f"figures/{group}_{n:02d}_{value}.png")
+        view["name"]=key; view["filename"]=value; view['group']=group
+        view["color"]=col
+        render_params[key]=view
+
+import json
+with open('render_params.json', 'w') as fp:
+    json.dump(render_params, fp)
+
+with open('render_params.json') as d:
+    render_params = json.load(d)
+
+for group in groups.columns:
+    tck_to_plot = groups[group][groups[group].notna()]
+    tcks = {x:y for i in tck_to_plot[::2] for x, y in tract_dic.items() if y==i}
+    for (key, view), n in zip(render_params.items(), range(len(tcks))):
+        x_cut = view["x_cut"]; y_cut = view["y_cut"]; z_cut = view["z_cut"]
+        col = view["color"]; camera = view["camera"]
         tract_3D.tract_3D(bundle_filename=f"output/{key}_clean.tck", colors=col,
-                                        output=f"figures/{group}_{n:02d}_{value}.png", interactive=False)
+                            x_cut = x_cut, y_cut = y_cut, z_cut = z_cut,
+                            camera = camera, interactive=False,
+                            output=f"{group}_{n:02d}_{value}.png")
+
+
