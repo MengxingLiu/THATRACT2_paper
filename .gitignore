@@ -1,0 +1,7 @@
+raw_csv/
+.~*
+output/
+*.nii.gz
+*tck
+*trk
+__pycache__/
