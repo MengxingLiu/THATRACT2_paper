@@ -39,7 +39,7 @@ pairwise = pairwise[(~(pairwise.dice_voxels==0) &
 
 
 def plot_fig(btw, profile=profile, correlation=correlation, 
-                pairwise=pairwise, tck_to_plot=tck_to_plot):
+                pairwise=pairwise, tck_to_plot=tck_to_plot, pallete=palette):
     
     profile = profile[profile["TCK"].isin(tck_to_plot)]
     correlation = correlation[correlation["TCK"].isin(tck_to_plot)]
@@ -62,7 +62,7 @@ def plot_fig(btw, profile=profile, correlation=correlation,
         labels = ["test", "retest"]
         correlation = correlation[  (correlation["btw"]=="test-retest_AL_07")]
         pairwise = pairwise[(pairwise["btw"]=="T01vsT02")]
-    palette = sns.color_palette("tab20") + sns.color_palette("tab20b")
+    
     order = list(tck_to_plot).copy()
     xtick = [x[2:] for x in order]
     new_palette = palette.copy() * (round(len(order)/len(palette))+1)
@@ -147,19 +147,23 @@ tck_to_plot = groups[group][groups[group].notna()]
 profile_tmp = profile[profile["TCK"].isin(tck_to_plot)]
 correlation_tmp = correlation[correlation["TCK"].isin(tck_to_plot)]                                                 
 pairwise_tmp = pairwise[pairwise["TCK"].isin(tck_to_plot)]
+palette = sns.color_palette("tab20")[0:10] + sns.color_palette("tab20b")
 
 fig2 = plot_fig("compute", profile_tmp, correlation_tmp, pairwise_tmp, tck_to_plot)
-plt.show()
+#plt.show()
+fig2.set_size_inches(21.5,13.24)
+
+fig2.savefig( fig_dir / "Fig2_computational_IFG.svg", dpi=300, bbox_inches='tight')
+
 fig2 = plot_fig("test-retest", profile_tmp, correlation_tmp, pairwise_tmp, tck_to_plot)
 plt.show()
-
 fig2.set_size_inches(9.88,5.93)
-fig2.savefig( fig_dir / "Fig2_computational_new.svg", dpi=300, bbox_inches='tight')
+fig2.savefig( fig_dir / "Fig2_TRT_IFG.svg", dpi=300, bbox_inches='tight')
 
 
 # generate shell script to visualize tract streamlines
 # select only the left hemisphere
-palette = sns.color_palette("tab20") + sns.color_palette("tab20b") + sns.color_palette("tab20b")
+
 palette = palette[::2]
 # palette = [matplotlib.colors.to_hex(x) for x in palette]
 
@@ -168,16 +172,21 @@ base_dir=f"/bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-{ana}/sub-{sub}/ses-T
 tractparams = pd.read_csv(git_dir / "tractparams_AL_final_both_hemi.csv")
 tract_dic = dict(zip(tractparams["slabel"], tractparams["roi2"]))
 
-tck_to_plot=tractparams.roi2
-# tcks = [x for i in tck_to_plot[::2] for x, y in tract_dic.items() if y==i]   
-tcks = [x for i in tck_to_plot[:47] for x, y in tract_dic.items() if y==i]   
+
+tcks = [x for i in tck_to_plot[::2] for x, y in tract_dic.items() if y==i]   
+#tck_to_plot=tractparams.roi2
+#tcks = [x for i in tck_to_plot[:47] for x, y in tract_dic.items() if y==i]   
 
 # start writing shell script
-with open("s5_visualization_all.sh", 'w') as f:
+with open("s5_visualization.sh", 'w') as f:
     f.write("#!/bin/bash\n")
     f.write(f"vglrun mrview \\\n")
-    f.write(f"\t-load {base_dir}/flywheel/v0/output/RTP/fs/brainmask.nii.gz \\\n")
-    f.write(f"\t-overlay.load {base_dir}/flywheel/v0/output/RTP/fs/ROIs/Left-MD_dil-1.nii.gz \\\n")
+    f.write(f"\t-load {base_dir}/flywheel/v0/output/RTP/fs/nans.nii.gz \\\n")
+    f.write(f"\t-overlay.load {base_dir}/flywheel/v0/output/RTP/fs/brain_glass.nii.gz \\\n")
+    f.write(f"\t-overlay.opacity 0.03 \\\n")
+    f.write(f"\t-overlay.colourmap 0 \\\n")
+    f.write(f"\t-overlay.load {base_dir}/flywheel/v0/output/RTP/fs/MD_outline.nii.gz \\\n")
+    # f.write(f"\t-overlay.load {base_dir}/flywheel/v0/output/RTP/fs/ROIs/Left-MD_dil-1.nii.gz \\\n")    
     for tck, col, roi in zip(tcks, palette, tck_to_plot[::2]):
         col = tuple(x*255 for x in col)
         f.write(f"\t-overlay.load {base_dir}/flywheel/v0/output/RTP/fs/ROIs/{roi}_dil-1.nii.gz \\\n")
@@ -190,6 +199,26 @@ with open("s5_visualization_all.sh", 'w') as f:
         f.write(f"\t-tractography.colour {col[0]},{col[1]},{col[2]} \\\n")
     f.write("\t-mode 3 -noannotations -fullscreen \n")
 f.close()
+
+# create colormap for surface ROI rendering
+LUT_HCP = pd.read_csv(fig_dir / "LUT_HCP.txt", sep=" ")
+LUT_HCP.columns = ["integral", "label"]
+df_tmp = pd.DataFrame(columns = ["integral","label","R", "G", "B", "A"])
+for group in groups.columns:
+    if group=="AN": continue
+    tck_to_plot = groups[group][groups[group].notna()]
+    for col, roi in zip(palette, tck_to_plot[::2]):
+        if roi=="L_Area_47l": roi="L_Area_47l_(47_lateral)"
+        if len(LUT_HCP[LUT_HCP["label"]==roi]["integral"])==0:
+            print(roi,col); continue
+        integral = LUT_HCP[LUT_HCP["label"]==roi]["integral"].values[0]
+        R = col[0]; G = col[1]; B = col[2]
+        df_tmp = df_tmp.append({"integral":integral, "label":roi,
+                         "R":R, "G":G, "B":B, "A":1},ignore_index = True)
+df_tmp.to_csv(fig_dir / "HCP_surface_ROI_LUT.txt", sep="\t", index=False)
+# cmd to attach this LUT to niml.dset
+# MakeColorMap -usercolutfile HCP_surface_ROI_LUT.txt -suma_cmap toylut -sdset ~/suma_MNI152_2009/Orbital.niml.dset -overwrite
+
 
 import tract_3D
 import importlib

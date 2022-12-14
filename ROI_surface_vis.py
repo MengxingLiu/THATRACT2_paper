@@ -28,7 +28,7 @@ groups = pd.read_csv(raw_csv / "groups.csv")
 suma_dir = '/home/mengxing/suma_MNI152_2009'
 LUT = f"{suma_dir}/LUT_HCP.txt"
 
-HCP_vol = f"{suma_dir}/MNI_Glasser_HCP_v1.0.nii.gz"
+HCP_surf = f"{suma_dir}/lh.std.141.Glasser_HCP.lbl.niml.dset"
 
 LUT = pd.read_csv(LUT, delim_whitespace=True)
 LUT.columns = ["value", "label"]
@@ -46,10 +46,10 @@ for col in groups.columns:
             ind.append(value)
 
     ind = ','.join(str(n) for n in ind)
-    cmd_str = f"3dcalc -a {HCP_vol} -expr 'a * amongst(a,{ind})' -prefix {suma_dir}/{col}.nii.gz -overwrite"
+    cmd_str = f"3dcalc -a {HCP_surf} -expr 'a * amongst(a,{ind})' -prefix {suma_dir}/{col}.niml.dset -overwrite"
     print(cmd_str)
     sp.call(cmd_str,shell=True)
-    cmd_str = f"3drefit -copyaux {HCP_vol} {suma_dir}/{col}.nii.gz -overwrite"
+    cmd_str = f"3drefit -copyaux {HCP_surf} {suma_dir}/{col}.niml.dset -overwrite"
     print(cmd_str)
     sp.call(cmd_str,shell=True)
 
