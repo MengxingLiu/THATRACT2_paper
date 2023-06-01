@@ -16,6 +16,9 @@ import matplotlib.gridspec as gridspec
 from pathlib import Path
 import matplotlib.ticker as ticker
 plt.rcParams['svg.fonttype'] = 'none'
+import matplotlib as mpl
+mpl.rcParams['font.family'] = 'Arial'
+
 if getpass.getuser() == "mengxing":
     git_dir = Path("/home/mengxing/GIT/THATRACT2_paper")
 elif getpass.getuser() == "lmengxing":
@@ -162,9 +165,7 @@ fig2.savefig( fig_dir / "Fig2_TRT_IFG.svg", dpi=300, bbox_inches='tight')
 
 
 # generate shell script to visualize tract streamlines
-# select only the left hemisphere
 
-palette = palette[::2]
 # palette = [matplotlib.colors.to_hex(x) for x in palette]
 
 sub="S038"; ana="AL_07"
@@ -172,8 +173,12 @@ base_dir=f"/bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-{ana}/sub-{sub}/ses-T
 tractparams = pd.read_csv(git_dir / "tractparams_AL_final_both_hemi.csv")
 tract_dic = dict(zip(tractparams["slabel"], tractparams["roi2"]))
 
-
+# select only the left hemisphere
 tcks = [x for i in tck_to_plot[::2] for x, y in tract_dic.items() if y==i]   
+palette = palette[::2]
+while len(palette)<len(tcks):
+    palette = palette + palette
+
 #tck_to_plot=tractparams.roi2
 #tcks = [x for i in tck_to_plot[:47] for x, y in tract_dic.items() if y==i]   
 
@@ -198,6 +203,7 @@ with open("s5_visualization.sh", 'w') as f:
         f.write(f"\t-tractography.lighting 1 \\\n")
         f.write(f"\t-tractography.colour {col[0]},{col[1]},{col[2]} \\\n")
     f.write("\t-mode 3 -noannotations -fullscreen \n")
+
 f.close()
 
 # create colormap for surface ROI rendering
@@ -264,4 +270,16 @@ for group in groups.columns:
                             camera = camera, interactive=False,
                             output=f"{group}_{n:02d}_{value}.png")
 
+
+# figures for first round review on profile line plot
+
+profile_AL07 = profile.query("analysis == 'AL_07'")
+profile_AL07 = profile_AL07[profile_AL07["subID"].isin(profile_AL07[profile_AL07["ses"]=="T02"].subID.unique())]
+# DLPFC group
+TCKs = ['L_Area_9_anterior', 'L_Area_9_Posterior','L_Area_9-46d', 'L_Area_anterior_9-46v' ]
+profile_AL07= profile_AL07.query('TCK in @TCKs')
+sns.set_style("darkgrid")
+sns.set(font_scale = 2)
+sns.lineplot(x="ind", y="fa", hue="TCK", style="ses", data=profile_AL07)
+plt.show()
 

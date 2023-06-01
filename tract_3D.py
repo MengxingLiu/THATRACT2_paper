@@ -3,7 +3,7 @@ from dipy.viz import window, actor, ui
 from dipy.io.streamline import load_tractogram, save_tractogram
 import nibabel as nib
 from dipy.io.image import load_nifti, load_nifti_data
-
+from dipy.tracking.streamline import Streamlines
 
 def tract_3D(bundle_filename="AL26_clean.tck",
             reference_anatomy = "brainmask.nii.gz",
@@ -20,7 +20,8 @@ def tract_3D(bundle_filename="AL26_clean.tck",
     fa, affine_fa, img_fa = load_nifti(fa_filename, return_img=True)
     shape = data.shape
     streamlines=laf_sft.streamlines
-
+    # streamlines = Streamlines(laf_sft)
+    # streamlines = laf_sft
     
     world_coords = True
 

@@ -5,52 +5,116 @@ vglrun mrview \
 	-overlay.opacity 0.03 \
 	-overlay.colourmap 0 \
 	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/MD_outline.nii.gz \
-	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_9_Middle_dil-1.nii.gz \
+	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_9_anterior_dil-1.nii.gz \
 	-overlay.colour 31.0,119.0,180.0 \
 	-overlay.intensity 0.2,1 \
 	-overlay.threshold_min 0.2 \
 	-overlay.threshold_max 1 \
-	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL9_clean.tck \
+	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL34_clean.tck \
 	-tractography.lighting 1 \
 	-tractography.colour 31.0,119.0,180.0 \
-	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_10r_dil-1.nii.gz \
+	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_9_Posterior_dil-1.nii.gz \
 	-overlay.colour 255.0,127.0,14.0 \
 	-overlay.intensity 0.2,1 \
 	-overlay.threshold_min 0.2 \
 	-overlay.threshold_max 1 \
-	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL10_clean.tck \
+	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL35_clean.tck \
 	-tractography.lighting 1 \
 	-tractography.colour 255.0,127.0,14.0 \
-	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_10v_dil-1.nii.gz \
+	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_8Ad_dil-1.nii.gz \
 	-overlay.colour 44.0,160.0,44.0 \
 	-overlay.intensity 0.2,1 \
 	-overlay.threshold_min 0.2 \
 	-overlay.threshold_max 1 \
-	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL11_clean.tck \
+	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL36_clean.tck \
 	-tractography.lighting 1 \
 	-tractography.colour 44.0,160.0,44.0 \
-	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_s32_dil-1.nii.gz \
+	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_9-46d_dil-1.nii.gz \
 	-overlay.colour 214.0,39.0,40.0 \
 	-overlay.intensity 0.2,1 \
 	-overlay.threshold_min 0.2 \
 	-overlay.threshold_max 1 \
-	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL14_clean.tck \
+	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL37_clean.tck \
 	-tractography.lighting 1 \
 	-tractography.colour 214.0,39.0,40.0 \
-	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_p32_dil-1.nii.gz \
+	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_anterior_9-46v_dil-1.nii.gz \
 	-overlay.colour 148.0,103.0,189.0 \
 	-overlay.intensity 0.2,1 \
 	-overlay.threshold_min 0.2 \
 	-overlay.threshold_max 1 \
-	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL13_clean.tck \
+	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL38_clean.tck \
 	-tractography.lighting 1 \
 	-tractography.colour 148.0,103.0,189.0 \
-	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_25_dil-1.nii.gz \
+	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_posterior_9-46v_dil-1.nii.gz \
 	-overlay.colour 57.0,59.0,121.0 \
 	-overlay.intensity 0.2,1 \
 	-overlay.threshold_min 0.2 \
 	-overlay.threshold_max 1 \
-	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL12_clean.tck \
+	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL40_clean.tck \
 	-tractography.lighting 1 \
 	-tractography.colour 57.0,59.0,121.0 \
+	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_46_dil-1.nii.gz \
+	-overlay.colour 107.0,110.0,207.0 \
+	-overlay.intensity 0.2,1 \
+	-overlay.threshold_min 0.2 \
+	-overlay.threshold_max 1 \
+	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL39_clean.tck \
+	-tractography.lighting 1 \
+	-tractography.colour 107.0,110.0,207.0 \
+	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_8BM_dil-1.nii.gz \
+	-overlay.colour 99.0,121.0,57.0 \
+	-overlay.intensity 0.2,1 \
+	-overlay.threshold_min 0.2 \
+	-overlay.threshold_max 1 \
+	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL8_clean.tck \
+	-tractography.lighting 1 \
+	-tractography.colour 99.0,121.0,57.0 \
+	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_8C_dil-1.nii.gz \
+	-overlay.colour 181.0,207.0,107.0 \
+	-overlay.intensity 0.2,1 \
+	-overlay.threshold_min 0.2 \
+	-overlay.threshold_max 1 \
+	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL41_clean.tck \
+	-tractography.lighting 1 \
+	-tractography.colour 181.0,207.0,107.0 \
+	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_8Av_dil-1.nii.gz \
+	-overlay.colour 140.0,109.0,49.0 \
+	-overlay.intensity 0.2,1 \
+	-overlay.threshold_min 0.2 \
+	-overlay.threshold_max 1 \
+	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL42_clean.tck \
+	-tractography.lighting 1 \
+	-tractography.colour 140.0,109.0,49.0 \
+	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Inferior_6-8_Transitional_Area_dil-1.nii.gz \
+	-overlay.colour 231.0,186.0,82.0 \
+	-overlay.intensity 0.2,1 \
+	-overlay.threshold_min 0.2 \
+	-overlay.threshold_max 1 \
+	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL43_clean.tck \
+	-tractography.lighting 1 \
+	-tractography.colour 231.0,186.0,82.0 \
+	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Superior_6-8_Transitional_Area_dil-1.nii.gz \
+	-overlay.colour 132.0,60.0,57.0 \
+	-overlay.intensity 0.2,1 \
+	-overlay.threshold_min 0.2 \
+	-overlay.threshold_max 1 \
+	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL44_clean.tck \
+	-tractography.lighting 1 \
+	-tractography.colour 132.0,60.0,57.0 \
+	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Superior_Frontal_Language_Area_dil-1.nii.gz \
+	-overlay.colour 214.0,97.0,107.0 \
+	-overlay.intensity 0.2,1 \
+	-overlay.threshold_min 0.2 \
+	-overlay.threshold_max 1 \
+	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL45_clean.tck \
+	-tractography.lighting 1 \
+	-tractography.colour 214.0,97.0,107.0 \
+	-overlay.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/flywheel/v0/output/RTP/fs/ROIs/L_Area_8B_Lateral_dil-1.nii.gz \
+	-overlay.colour 123.0,65.0,115.0 \
+	-overlay.intensity 0.2,1 \
+	-overlay.threshold_min 0.2 \
+	-overlay.threshold_max 1 \
+	-tractography.load /bcbl/home/home_g-m/lmengxing/TESTDATA/analysis-AL_07/sub-S038/ses-T01/output/AL46_clean.tck \
+	-tractography.lighting 1 \
+	-tractography.colour 123.0,65.0,115.0 \
 	-mode 3 -noannotations -fullscreen 
