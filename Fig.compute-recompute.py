@@ -145,7 +145,7 @@ def plot_fig(btw, profile=profile, correlation=correlation,
     return fig2 
 
 groups = pd.read_csv(raw_csv / "groups.csv")
-group = "IFG"
+group = "mPFC"
 tck_to_plot = groups[group][groups[group].notna()]
 profile_tmp = profile[profile["TCK"].isin(tck_to_plot)]
 correlation_tmp = correlation[correlation["TCK"].isin(tck_to_plot)]                                                 
@@ -159,9 +159,11 @@ fig2.set_size_inches(21.5,13.24)
 fig2.savefig( fig_dir / "Fig2_computational_IFG.svg", dpi=300, bbox_inches='tight')
 
 fig2 = plot_fig("test-retest", profile_tmp, correlation_tmp, pairwise_tmp, tck_to_plot)
-plt.show()
-fig2.set_size_inches(9.88,5.93)
-fig2.savefig( fig_dir / "Fig2_TRT_IFG.svg", dpi=300, bbox_inches='tight')
+
+fig2.set_size_inches(21.5,13.24)
+# plt.show()
+# fig2.set_size_inches(9.88,5.93)
+fig2.savefig( fig_dir / "Fig2_TRT_test_IFC.svg", dpi=300, bbox_inches='tight')
 
 
 # generate shell script to visualize tract streamlines
@@ -183,15 +185,15 @@ while len(palette)<len(tcks):
 #tcks = [x for i in tck_to_plot[:47] for x, y in tract_dic.items() if y==i]   
 
 # start writing shell script
-with open("s5_visualization.sh", 'w') as f:
+with open("s5_visualization_mPFC.sh", 'w') as f:
     f.write("#!/bin/bash\n")
     f.write(f"vglrun mrview \\\n")
     f.write(f"\t-load {base_dir}/flywheel/v0/output/RTP/fs/nans.nii.gz \\\n")
     f.write(f"\t-overlay.load {base_dir}/flywheel/v0/output/RTP/fs/brain_glass.nii.gz \\\n")
     f.write(f"\t-overlay.opacity 0.03 \\\n")
     f.write(f"\t-overlay.colourmap 0 \\\n")
-    f.write(f"\t-overlay.load {base_dir}/flywheel/v0/output/RTP/fs/MD_outline.nii.gz \\\n")
-    # f.write(f"\t-overlay.load {base_dir}/flywheel/v0/output/RTP/fs/ROIs/Left-MD_dil-1.nii.gz \\\n")    
+    # f.write(f"\t-overlay.load {base_dir}/flywheel/v0/output/RTP/fs/MD_outline.nii.gz \\\n")
+    f.write(f"\t-overlay.load {base_dir}/flywheel/v0/output/RTP/fs/ROIs/Left-MDl_AND_Left-MDm.nii.gz \\\n")    
     for tck, col, roi in zip(tcks, palette, tck_to_plot[::2]):
         col = tuple(x*255 for x in col)
         f.write(f"\t-overlay.load {base_dir}/flywheel/v0/output/RTP/fs/ROIs/{roi}_dil-1.nii.gz \\\n")
@@ -224,6 +226,7 @@ for group in groups.columns:
 df_tmp.to_csv(fig_dir / "HCP_surface_ROI_LUT.txt", sep="\t", index=False)
 # cmd to attach this LUT to niml.dset
 # MakeColorMap -usercolutfile HCP_surface_ROI_LUT.txt -suma_cmap toylut -sdset ~/suma_MNI152_2009/Orbital.niml.dset -overwrite
+# this will create a new file Orbital.lbl.niml.dset
 
 
 import tract_3D
@@ -277,9 +280,39 @@ profile_AL07 = profile.query("analysis == 'AL_07'")
 profile_AL07 = profile_AL07[profile_AL07["subID"].isin(profile_AL07[profile_AL07["ses"]=="T02"].subID.unique())]
 # DLPFC group
 TCKs = ['L_Area_9_anterior', 'L_Area_9_Posterior','L_Area_9-46d', 'L_Area_anterior_9-46v' ]
-profile_AL07= profile_AL07.query('TCK in @TCKs')
+profile_AL07_tmp= profile_AL07.query('TCK in @TCKs')
 sns.set_style("darkgrid")
 sns.set(font_scale = 2)
-sns.lineplot(x="ind", y="fa", hue="TCK", style="ses", data=profile_AL07)
+sns.lineplot(x="ind", y="fa", hue="TCK", style="ses", data=profile_AL07_tmp)
+
 plt.show()
 
+# mPFC group
+TCKs = ['L_Area_s32', 'L_Area_10v','L_Area_10r', 'L_Area_25' ]
+profile_AL07_tmp= profile_AL07.query('TCK in @TCKs')
+sns.set_style("darkgrid")
+sns.set(font_scale = 2)
+fig, ax = plt.subplots(figsize=[13.06,8.96])
+sns.lineplot(ax=ax, x="ind", y="fa", hue="TCK", style="ses", data=profile_AL07_tmp)
+
+plt.show()
+
+# OrbPoPFC group
+TCKs = ['L_Area_11l', 'L_Area_13l','L_Area_anterior_10p', 'L_Area_posterior_10p' ]
+profile_AL07_tmp= profile_AL07.query('TCK in @TCKs')
+sns.set_style("darkgrid")
+sns.set(font_scale = 2)
+fig, ax = plt.subplots(figsize=[13.06,8.96])
+sns.lineplot(ax=ax, x="ind", y="fa", hue="TCK", style="ses", data=profile_AL07_tmp)
+
+plt.show()
+
+# IFC group
+TCKs = ['L_Area_45', 'L_Area_IFSp','L_Area__IFSa', 'L_Area_47l' ]
+profile_AL07_tmp= profile_AL07.query('TCK in @TCKs')
+sns.set_style("darkgrid")
+sns.set(font_scale = 2)
+fig, ax = plt.subplots(figsize=[13.06,8.96])
+sns.lineplot(ax=ax, x="ind", y="fa", hue="TCK", style="ses", data=profile_AL07_tmp)
+
+plt.show()
